@@ -105,12 +105,12 @@ async function etfTencent(asOf, etf300){
         if(symbol==='sh510300'&&!group.includes(symbol))continue;
         if(!group.includes(symbol)||seen.has(symbol))throw new Error(`Tencent ETF duplicate or unexpected ${symbol}`);
         seen.add(symbol);
-        if(fields[55]!=='ETF')continue;
+        if(fields[61]!=='ETF')continue;
         if(fields[2]!==item[2])throw new Error(`Tencent ETF code mismatch ${symbol}`);
         listed++;
         const date=String(fields[30]??'').replace(/^(\d{4})(\d\d)(\d\d).*$/,'$1-$2-$3');
         if(date!==asOf)continue; // Suspended funds have no turnover on this day.
-        const amount=Number(fields[51]); // RMB 10,000 (万元)
+        const amount=Number(fields[57]); // RMB 10,000 (万元)
         if(!Number.isFinite(amount)||amount<0)throw new Error(`Tencent ETF amount malformed ${symbol}`);
         if(amount===0)continue;
         if(item[1]==='sh')shYuan10k+=amount;else szYuan10k+=amount;
