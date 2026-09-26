@@ -221,7 +221,7 @@ try{
     etfCount:value.count,etfActive:value.active,etfSource:value.source,etfCheckedAt:now.toISOString()});
 }catch(e){etfStatus=String(e);console.warn(etfStatus)}
 const payload={asOf:latestDate,generatedAt:now.toISOString(),
-  source:'腾讯财经 / 上海证券交易所 / 东方财富 ETF 行情',
+  source:`腾讯财经 / 上海证券交易所 / ${old.get(latestDate)?.etfSource??'ETF 待核实'}`,
   status:{star:starStatus,etf:etfStatus},
   history:[...old.values()].filter(x=>x.date<=latestDate).sort((a,b)=>a.date.localeCompare(b.date)).slice(-300)};
 await fs.mkdir(path.dirname(output),{recursive:true});
