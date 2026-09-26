@@ -164,6 +164,20 @@ try{
   const value=await etf(specialDate);
   old.set(specialDate,{...old.get(specialDate),etf:value.amount,etfCount:value.count,etfActive:value.active,etfCheckedAt:now.toISOString()});
 }catch(e){etfStatus=String(e);console.warn(etfStatus)}
+if(etfStatus){
+  // Diagnostic probes for official exchange totals and Tencent's batch quote.
+  for(const address of [
+    'https://etf.sse.com.cn/xhtml/js/marketData.js?v=V3.1.0_20260312',
+    'https://fund.szse.cn/marketdata/fundsmarket/index.html',
+    'https://qt.gtimg.cn/q=sh510300,sz159919'
+  ]){
+    try{
+      const data=await get(new URL(address));
+      const indicators=[...data.matchAll(/.{0,120}(?:CATALOGID|sqlId|SHOWTYPE|基金成交概况|ETF).{0,180}/gi)].slice(0,4).map(x=>x[0]);
+      console.info('etf-fallback-diagnostic',new URL(address).hostname,data.length,JSON.stringify(indicators));
+    }catch(error){console.info('etf-fallback-diagnostic',new URL(address).hostname,String(error));}
+  }
+}
 const payload={asOf:latestDate,generatedAt:now.toISOString(),
   source:'腾讯财经 / 上海证券交易所 / 东方财富 ETF 行情',
   status:{star:starStatus,etf:etfStatus},
