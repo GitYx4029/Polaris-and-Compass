@@ -76,6 +76,52 @@ async function star(date){
   return amount;
 }
 const etfUrl='https://push2delay.eastmoney.com/api/qt/clist/get';
+// Exchange code ranges: Shanghai listed ETF secondary-market codes end in 0;
+// Shenzhen assigns both 158000-158999 and 159000-159999 to ETFs. Query the
+// whole ranges, then retain securities that Tencent identifies as ETF.
+async function etfTencent(asOf, etf300){
+  const symbols=[];
+  for(let code=500000;code<600000;code+=10)symbols.push(`sh${code}`);
+  for(let code=158000;code<160000;code++)symbols.push(`sz${code}`);
+  const groups=[];
+  for(let i=0;i<symbols.length;i+=80)groups.push(symbols.slice(i,i+80));
+  let next=0, queried=0, shYuan10k=0, szYuan10k=0, listed=0, active=0;
+  const seen=new Set();
+  async function worker(){
+    while(next<groups.length){
+      const group=groups[next++];
+      const url=new URL('https://qt.gtimg.cn/');
+      url.searchParams.set('q',group.join(','));
+      let raw;
+      try{raw=await get(url);}catch{await pause(250);raw=await get(url);}
+      const assignments=[...raw.matchAll(/v_(sh|sz)(\d{6})="([^"]*)";/g)];
+      if(assignments.length!==group.length)throw new Error(`Tencent ETF batch incomplete: ${assignments.length}/${group.length}`);
+      queried+=assignments.length;
+      for(const item of assignments){
+        const symbol=item[1]+item[2], fields=item[3].split('~');
+        if(!group.includes(symbol)||seen.has(symbol))throw new Error(`Tencent ETF duplicate or unexpected ${symbol}`);
+        seen.add(symbol);
+        if(fields[55]!=='ETF')continue;
+        if(fields[2]!==item[2])throw new Error(`Tencent ETF code mismatch ${symbol}`);
+        listed++;
+        const date=String(fields[30]??'').replace(/^(\d{4})(\d\d)(\d\d).*$/,'$1-$2-$3');
+        if(date!==asOf)continue; // Suspended funds have no turnover on this day.
+        const amount=Number(fields[51]); // RMB 10,000 (万元)
+        if(!Number.isFinite(amount)||amount<0)throw new Error(`Tencent ETF amount malformed ${symbol}`);
+        if(amount===0)continue;
+        if(item[1]==='sh')shYuan10k+=amount;else szYuan10k+=amount;
+        active++;
+      }
+    }
+  }
+  await Promise.all(Array.from({length:12},()=>worker()));
+  if(queried!==symbols.length||listed<500||active<300)throw new Error(`Tencent ETF coverage ${queried}/${symbols.length}, ETF ${listed}, active ${active}`);
+  const sh=shYuan10k/1e4,sz=szYuan10k/1e4;
+  if(sh<100||sz<100||sh+sz<(etf300??0))throw new Error(`Tencent ETF totals invalid: SH ${sh}, SZ ${sz}`);
+  if(asOf==='2026-09-24'&&Math.abs(sh-3777.45)>5)
+    throw new Error(`Tencent ETF SSE cross-check differs: ${sh.toFixed(2)} vs 3777.45`);
+  return {amount:sh+sz,sh,sz,count:listed,active,source:'腾讯财经全代码段报价'};
+}
 async function eastmoney(url){
   const hosts=['push2delay.eastmoney.com','88.push2.eastmoney.com','push2.eastmoney.com'];
   const failures=[];
@@ -161,23 +207,15 @@ try{
   }
 }catch(e){starStatus=String(e);console.warn(starStatus)}
 try{
-  const value=await etf(specialDate);
-  old.set(specialDate,{...old.get(specialDate),etf:value.amount,etfCount:value.count,etfActive:value.active,etfCheckedAt:now.toISOString()});
-}catch(e){etfStatus=String(e);console.warn(etfStatus)}
-if(etfStatus){
-  // Diagnostic probes for official exchange totals and Tencent's batch quote.
-  for(const address of [
-    'https://etf.sse.com.cn/xhtml/js/marketData.js?v=V3.1.0_20260312',
-    'https://fund.szse.cn/marketdata/fundsmarket/index.html',
-    'https://qt.gtimg.cn/q=sh510300,sz159919'
-  ]){
-    try{
-      const data=await get(new URL(address));
-      const indicators=[...data.matchAll(/.{0,120}(?:CATALOGID|sqlId|SHOWTYPE|基金成交概况|ETF).{0,180}/gi)].slice(0,4).map(x=>x[0]);
-      console.info('etf-fallback-diagnostic',new URL(address).hostname,data.length,JSON.stringify(indicators));
-    }catch(error){console.info('etf-fallback-diagnostic',new URL(address).hostname,String(error));}
+  let value;
+  try{value=await etf(specialDate);value.source='东方财富 ETF 全量行情';}
+  catch(primary){
+    console.info('ETF preferred source unavailable',String(primary));
+    value=await etfTencent(specialDate,etf300?.amounts.get(specialDate));
   }
-}
+  old.set(specialDate,{...old.get(specialDate),etf:value.amount,etfSh:value.sh,etfSz:value.sz,
+    etfCount:value.count,etfActive:value.active,etfSource:value.source,etfCheckedAt:now.toISOString()});
+}catch(e){etfStatus=String(e);console.warn(etfStatus)}
 const payload={asOf:latestDate,generatedAt:now.toISOString(),
   source:'腾讯财经 / 上海证券交易所 / 东方财富 ETF 行情',
   status:{star:starStatus,etf:etfStatus},
@@ -187,5 +225,6 @@ await fs.writeFile(output,JSON.stringify(payload,null,2)+'\n');
 console.log(JSON.stringify({asOf:latestDate,sh:sh.amounts.get(latestDate),sz:sz.amounts.get(latestDate),
   etf510300:etf300?.amounts.get(latestDate),etf300Status:etf300Result.error,
   star:old.get(latestDate)?.star,
-  etf:old.get(latestDate)?.etf,etfCount:old.get(latestDate)?.etfCount,
+  etf:old.get(latestDate)?.etf,etfSh:old.get(latestDate)?.etfSh,etfSz:old.get(latestDate)?.etfSz,
+  etfCount:old.get(latestDate)?.etfCount,etfSource:old.get(latestDate)?.etfSource,
   starStatus,etfStatus}));
