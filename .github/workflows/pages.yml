@@ -4,9 +4,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # UTC 04:10 / 07:25 = China 12:10 / 15:25, weekdays.
+    - cron: '10 4 * * 1-5'
+    - cron: '25 7 * * 1-5'
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -23,6 +27,17 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - name: Collect and cross-check market data
+        run: node scripts/collect-market.mjs
+      - name: Preserve verified history in the repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/data/market-snapshot.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update verified market snapshot'
+            git push
+          fi
       - run: npm run build
       - uses: actions/configure-pages@v5
         with:

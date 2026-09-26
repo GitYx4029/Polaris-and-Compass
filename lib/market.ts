@@ -1,10 +1,10 @@
-export type Day = { date: string; sh: number; sz: number; total: number; roll20?: number };
+export type Day = { date: string; sh: number; sz: number; total: number; roll20?: number; avg20?: number; heat?: number };
 export type MarketRow = { date: string; sh: number | null; sz: number | null; failed?: boolean };
 
 // Tencent's index daily bar: [date, open, close, high, low, volume,
 // ..., amplitude, turnover (RMB 10,000), ...]. Its embedded qt quote
 // carries turnover in RMB yuan at field 35, including the current session.
-export function parseTencent(payload: unknown, symbol: "sh000001" | "sz399001") {
+export function parseTencent(payload: unknown, symbol: "sh000001" | "sz399001" | "sh510300") {
   const data = (payload as {data?:Record<string,{day?:unknown;qfqday?:unknown}>;qt?:Record<string,unknown>})?.data?.[symbol];
   const bars = data?.day ?? data?.qfqday;
   if (!Array.isArray(bars)) throw new Error(`${symbol} 缺少日线数据`);
@@ -12,7 +12,7 @@ export function parseTencent(payload: unknown, symbol: "sh000001" | "sz399001") 
   for (const bar of bars) {
     if (!Array.isArray(bar) || typeof bar[0] !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(bar[0])) continue;
     const units = number(bar[8]);
-    if (units !== null && units > 1e6 && units < 1e10) amounts.set(bar[0],units / 1e4);
+    if (units !== null && units > (symbol === "sh510300" ? 1e3 : 1e6) && units < 1e10) amounts.set(bar[0],units / 1e4);
   }
   const quote = (payload as {data?:Record<string,{qt?:Record<string,unknown>}>})?.data?.[symbol]?.qt?.[symbol];
   let quoteAt: string | null = null;
@@ -20,7 +20,7 @@ export function parseTencent(payload: unknown, symbol: "sh000001" | "sz399001") 
     quoteAt = `${quote[30].slice(0,4)}-${quote[30].slice(4,6)}-${quote[30].slice(6,8)} ${quote[30].slice(8,10)}:${quote[30].slice(10,12)}`;
     const date = quoteAt.slice(0,10);
     const yuan = number(String(quote[35] ?? "").split("/")[2]);
-    if (yuan !== null && yuan > 1e10 && yuan < 1e14) {
+    if (yuan !== null && yuan > (symbol === "sh510300" ? 1e7 : 1e10) && yuan < 1e14) {
       const quoteYi = yuan / 1e8;
       const dailyYi = amounts.get(date);
       if (dailyYi !== undefined && quoteAt.slice(11) >= "16:00" && Math.abs(quoteYi/dailyYi-1) > 0.005)
@@ -41,8 +41,8 @@ const number = (value: unknown): number | null => {
 };
 
 // SSE's daily result is one record per requested product, in PRODUCT_CODE order.
-// AKShare's stock_sse_deal_daily maps the fifth property to 成交金额 (亿元).
-export function parseSse(payload: unknown, requestedDate?: string): number | null {
+// PRODUCT_CODE=03 is 科创板; the fifth property is 成交金额 (亿元).
+export function parseSseStar(payload: unknown, requestedDate?: string): number | null {
   const rows = (payload as { result?: unknown })?.result;
   if (!Array.isArray(rows) || rows.length < 3) return null;
   const main = rows[0], star = rows[2];
@@ -53,13 +53,13 @@ export function parseSse(payload: unknown, requestedDate?: string): number | nul
   }
   const a = number(Object.values(main)[4]);
   const b = number(Object.values(star)[4]);
-  if (a === null || b === null || a < 0 || b < 0 || a + b < 100) return null;
+  if (a === null || b === null || a < 0 || b <= 0 || b > 10000) return null;
   if (rows.length >= 5 && rows[4] && typeof rows[4] === "object") {
     const all = number(Object.values(rows[4])[4]);
     const bShares = rows[1] && typeof rows[1] === "object" ? number(Object.values(rows[1])[4]) : null;
     if (all !== null && bShares !== null && Math.abs(all - (a + b + bShares)) > Math.max(1, all * 0.001)) return null;
   }
-  return a + b;
+  return b;
 }
 
 // SZSE market overview separates 主板A股 and 创业板A股. Monetary values
@@ -95,6 +95,7 @@ export function composeDays(entries: Array<{ date: string; sh: number | null; sz
     const window = sessions.slice(i - 19, i + 1);
     const roll20 = window.length === 20 && window.every(x => x.sh !== null && x.sz !== null)
       ? window.reduce((sum, item) => sum + item.sh! + item.sz!, 0) : undefined;
-    return [{ date: e.date, sh:e.sh, sz:e.sz, total, ...(roll20 === undefined ? {} : { roll20 }) }];
+    return [{ date: e.date, sh:e.sh, sz:e.sz, total,
+      ...(roll20 === undefined ? {} : { roll20, avg20:roll20/20, heat:total/(roll20/20) }) }];
   });
 }
