@@ -1,10 +1,10 @@
 {
   "asOf": "2026-09-24",
-  "generatedAt": "2026-09-26T13:37:59.693Z",
+  "generatedAt": "2026-09-26T13:44:53.669Z",
   "source": "腾讯财经 / 上海证券交易所 / 东方财富 ETF 行情",
   "status": {
-    "star": "Error: SSE endpoints unavailable: TypeError: fetch failed; TypeError: fetch failed",
-    "etf": "Error: push2delay.eastmoney.com: Error: push2delay.eastmoney.com: HTTP 502 | 88.push2.eastmoney.com: TypeError: fetch failed | push2.eastmoney.com: TypeError: fetch failed"
+    "star": null,
+    "etf": "Error: Tencent ETF batch incomplete: 16/80"
   },
   "history": [
     {
@@ -1845,7 +1845,7 @@
       "sz": 8697.44360964,
       "etf510300": 32.20888135,
       "star": 2457.81,
-      "starCheckedAt": "2026-09-26T13:31:18.432Z"
+      "starCheckedAt": "2026-09-26T13:44:53.669Z"
     }
   ]
 }
