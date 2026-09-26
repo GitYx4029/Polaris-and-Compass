@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { composeDays, parseTencent, type Day, type MarketRow } from "@/lib/market";
+import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { nextScheduledRefresh } from "@/lib/refreshSchedule";
 
 type Result = { days: Day[]; quoteAt: (string|null)[]; source: string; checkedAt: string };
@@ -45,6 +46,8 @@ function browserKline(symbol: "sh000001"|"sz399001") {
 async function loadMarket():Promise<Result> {
   let rows:MarketRow[], quoteAt:(string|null)[], source:string;
   try {
+    // GitHub Pages is static; use Tencent's browser script response there.
+    if(window.location.hostname.endsWith(".github.io"))throw new Error("static-host");
     const response=await fetch("/api/market",{cache:"no-store"});
     if(!response.ok)throw new Error(`服务端 ${response.status}`);
     const data=await response.json() as {rows:MarketRow[];quoteAt:(string|null)[];source:string};
@@ -73,7 +76,19 @@ function downloadHistory(result:Result) {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
+function downloadQuotes() {
+  const field=(value:string|number)=>`"${String(value).replace(/"/g,'""')}"`;
+  const rows=["序号,人物,观点摘述,表述方式,原始出处,出处位置,来源链接",
+    ...investorQuotes.map(q=>[q.id,q.author,q.text,"依据原文意译或归纳",q.source,q.locator,q.url].map(field).join(","))];
+  const blob=new Blob(["\ufeff",rows.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement("a");anchor.href=url;anchor.download="投资观点摘录库.csv";
+  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 function Chart({data}:{data:Day[]}) {
+  const [hover,setHover]=useState<number|null>(null);
   const pts=data.filter(d=>d.roll20!==undefined).slice(-45);
   if(pts.length<2)return <div className="chart-empty">凑齐 21 个完整交易日后绘制滚动趋势</div>;
   const w=900,h=230,p=30,values=pts.map(d=>d.roll20!/10000);
@@ -82,17 +97,32 @@ function Chart({data}:{data:Day[]}) {
   const x=(i:number)=>p+i*(w-p*2)/(pts.length-1);
   const y=(v:number)=>h-p-(v-min)*(h-p*2)/(max-min);
   const path=pts.map((d,i)=>`${i?"L":"M"}${x(i)},${y(d.roll20!/10000)}`).join(" ");
-  return <div className="line-frame"><svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label="近20交易日累计成交额走势">
+  const selected=hover!==null?pts[hover]:undefined;
+  return <div className="line-frame"><svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label="近20交易日累计成交额走势"
+    onPointerMove={event=>{
+      const rect=event.currentTarget.getBoundingClientRect();
+      const px=(event.clientX-rect.left)/rect.width*w;
+      setHover(Math.max(0,Math.min(pts.length-1,Math.round((px-p)*(pts.length-1)/(w-2*p)))));
+    }} onPointerLeave={()=>setHover(null)}>
     {[55,60,110,115].filter(v=>v>min&&v<max).map(v=><g key={v}><line x1={p} x2={w-p} y1={y(v)} y2={y(v)} stroke="#477078" strokeDasharray="5 7"/><text x={w-p-4} y={y(v)-7} textAnchor="end" fill="#8aa5a7" fontSize="16">{v} 万亿</text></g>)}
     <path d={path} fill="none" stroke="#42c6b1" strokeWidth="3.5" vectorEffect="non-scaling-stroke"/>
-    {pts.map((d,i)=><circle key={d.date} cx={x(i)} cy={y(d.roll20!/10000)} r="4" fill="#42c6b1"><title>{d.date}：{wan(d.roll20!)} 万亿元</title></circle>)}
-  </svg><div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div></div>;
+    {selected&&<line x1={x(hover!)} x2={x(hover!)} y1={p} y2={h-p} stroke="#91ddd0" strokeDasharray="4 5" vectorEffect="non-scaling-stroke"/>}
+    {pts.map((d,i)=><circle key={d.date} cx={x(i)} cy={y(d.roll20!/10000)} r={i===hover?"7":"4"} fill="#42c6b1"
+      tabIndex={0} aria-label={`${d.date}，20日累计 ${(d.roll20!/10000).toFixed(4)} 万亿元`}
+      onFocus={()=>setHover(i)} onBlur={()=>setHover(null)} onClick={()=>setHover(i)}/>)}
+  </svg>{selected&&<div className={`chart-tooltip ${y(selected.roll20!/10000)<110?"below":"above"}`}
+    style={{left:`clamp(120px, ${x(hover!)/w*100}%, calc(100% - 120px))`,top:`${y(selected.roll20!/10000)/h*210}px`}} role="status">
+    <strong>{selected.date}</strong><div><span>20 日累计</span><b>{(selected.roll20!/10000).toFixed(4)} 万亿元</b></div>
+    <div><span>当日合计</span><b>{(selected.total/10000).toFixed(4)} 万亿元</b></div>
+    <div><span>沪市 / 深市</span><b>{(selected.sh/10000).toFixed(4)} / {(selected.sz/10000).toFixed(4)} 万亿元</b></div>
+  </div>}<div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div></div>;
 }
 
 export default function Home() {
   const [result,setResult]=useState<Result|null>(null);
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(true);
+  const [dailyQuoteIndex,setDailyQuoteIndex]=useState(0);
   const requestId=useRef(0);
   const refresh=useCallback(async()=>{
     const id=++requestId.current;
@@ -113,6 +143,11 @@ export default function Home() {
     document.addEventListener("visibilitychange",onVisibility);
     return()=>{clearInterval(poll);clearTimeout(scheduled);document.removeEventListener("visibilitychange",onVisibility);requestId.current++};
   },[refresh]);
+  useEffect(()=>{
+    const update=()=>setDailyQuoteIndex(quoteIndexAt(Date.now()));
+    update();const clock=setInterval(update,60_000);
+    return()=>clearInterval(clock);
+  },[]);
   const days=result?.days??[],latest=days.at(-1),prev=days.at(-2);
   const currentTier=latest?tier(latest.total/10000):null;
   const delta=latest&&prev?(latest.total/prev.total-1)*100:null;
@@ -125,9 +160,11 @@ export default function Home() {
   const waitingNoon=!!(currentDay&&clock>="12:00"&&clock<"13:00"&&(!quoteTime?.startsWith(today)||quoteTime.slice(11)<"11:30"));
   const intraday=!!(currentDay&&!closeConfirmed&&!waitingClose);
   const phase=waitingClose?"收盘数据待更新":waitingNoon?"午间数据待更新":intraday&&clock>="12:00"&&clock<"13:00"?"午间累计":intraday?"盘中累计":"收盘";
+  const dailyQuote=investorQuotes[dailyQuoteIndex];
   return <main className="shell">
     <header className="topbar"><div className="brand"><span className="brand-mark"/>A股成交观察</div><div className="top-right"><span>沪深两市 · {waitingClose?"收盘核对中":intraday?"盘中更新":"最近交易日"}</span><button onClick={refresh} disabled={loading}><RefreshCw size={17} className={loading?"spinning":""}/>刷新</button></div></header>
     <div className="content">
+      <section className="daily-quote" aria-label="每日投资观点"><div className="quote-body"><span className="quote-label">今日投资观点 · {dailyQuote.author}</span><p>{dailyQuote.text}</p><a href={dailyQuote.url} target="_blank" rel="noreferrer">{dailyQuote.source} · {dailyQuote.locator}</a><span className="quote-note">据原文意译或归纳</span></div><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>导出观点库 CSV（{investorQuotes.length} 条）</button></section>
       <div className="intro"><div><p className="eyebrow">MARKET ACTIVITY / DAILY</p><h1>成交活跃度</h1></div><div className="status-col"><div className="freshness"><span className={`dot ${latest?"good":""}`}/>{loading&&!latest?"正在读取行情数据":latest?`数据日期 ${latest.date} · ${phase}`:"暂无有效数据"}</div><div className="schedule-hint">北京时间 12:00 / 15:15 自动刷新</div></div></div>
       {error&&<div className="notice error" role="alert">{error} <button onClick={refresh}>重试</button></div>}
       {latest&&prev&&tier(prev.total/10000)!==currentTier&&<div className="notice" role="status">最近交易日成交额进入 <strong>{tiers[currentTier!].text} 万亿</strong> 区间。</div>}
@@ -137,7 +174,7 @@ export default function Home() {
       </div>
       <div className="two-col">
         <section className="panel trend"><div className="panel-header"><div><p className="eyebrow">20-DAY ROLLING</p><h2>滚动累计趋势</h2></div><span>每日推进一个交易日</span></div><Chart data={days}/><p className="fine">每一点为该日及之前 19 个交易日的成交金额合计；仅在图表范围内绘制参考线。</p></section>
-        <section className="panel guide"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST</p><h2>指标与参考含义</h2></div><span>原图观察框架</span></div><div className="range-list">{tiers.map((t,i)=><div className={`range ${i===currentTier?"active":""}`} key={t.text}><span>0{i+1}</span><strong>{t.text}</strong><span>{t.name}</span>{i===currentTier&&<em>当前</em>}</div>)}</div><p className="fine">上表单位为单日万亿元；原图据此描述参与结构与板块行情。</p><div className="reference-list"><div><strong>11.38 万亿</strong><span>原图记录的本轮最低滚动值</span></div><div><strong>55—60 万亿</strong><span>原图：利润开始撤走的观察区间</span></div><div><strong>110—115 万亿</strong><span>原图：全部撤走的观察区间</span></div></div><p className="fine">此处单位为近 20 个交易日累计万亿元。均为原图的主观观察，不代表可验证的买卖信号。</p></section>
+        <section className="panel guide"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST</p><h2>指标与参考含义</h2></div><span>单日与滚动指标</span></div><div className="range-list">{tiers.map((t,i)=><div className={`range ${i===currentTier?"active":""}`} key={t.text}><span>0{i+1}</span><strong>{t.text}</strong><span>{t.name}</span>{i===currentTier&&<em>当前</em>}</div>)}</div><p className="fine">上表是单日成交额观察区间，单位：万亿元。</p><div className="reference-list"><div><strong>11.38 万亿</strong><span>历史参考低点</span></div><div><strong>55—60 万亿</strong><span>减仓观察区间</span></div><div><strong>110—115 万亿</strong><span>清仓观察区间</span></div></div><p className="fine">此处单位为近 20 个交易日累计万亿元；均为人工设定的参考阈值，不代表可验证的交易信号。</p></section>
       </div>
       <section className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h2>近期交易日</h2><p className="history-unit">金额单位：万亿元</p></div><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button></div><div className="table-wrap"><div className="table-row table-head"><span>交易日</span><span>沪市</span><span>深市</span><span>合计</span><span>20 日累计</span></div>{days.slice(-10).reverse().map(d=><div className="table-row" key={d.date}><span>{d.date}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{d.roll20===undefined?"—":wan(d.roll20)}</span></div>)}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div></section>
       <footer><p><strong>数据口径</strong> 腾讯行情上证指数与深证成指的沪、深市场成交额，单位由万元换算为万亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日指标由连续 20 个共同交易日合计，不补填休市日。</p><p><strong>更新与核对</strong> 页面打开时，周一至周五北京时间 12:00、15:15 定点刷新，并每 2 分钟读取一次；重新打开页面也会立即读取。节假日及行情源尚未更新时保留上一交易日数据。最近行情还用同一数据源的独立即时报价字段核对。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer>

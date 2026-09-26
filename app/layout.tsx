@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: "A股成交观察",
   description: "沪深A股单日成交额与20个交易日滚动累计。",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/Polaris-and-Compass/favicon.svg",
+    shortcut: "/Polaris-and-Compass/favicon.svg",
   },
 };
 

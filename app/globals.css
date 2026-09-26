@@ -14,6 +14,14 @@ a { color:#8dd9c9; text-underline-offset:3px; }
 .top-right button:disabled { opacity:.65;cursor:wait; }
 .spinning { animation:spin 2s linear infinite; } @keyframes spin {to{transform:rotate(360deg)}}
 .content { max-width:1220px;margin:auto;padding:38px 24px 65px; }
+.daily-quote { display:flex;align-items:center;justify-content:space-between;gap:22px;background:#123036;border:1px solid #345755;border-radius:11px;padding:16px 21px;margin-bottom:27px; }
+.quote-body { min-width:0; }
+.quote-label { display:block;color:#76d1bb;font-size:13px;font-weight:650;letter-spacing:.05em;margin-bottom:5px; }
+.quote-body p { font-size:18px;font-weight:570;line-height:1.5;color:#eff8f5;margin:0 0 5px; }
+.quote-body a,.quote-note { font-size:13px;color:#a9c9c3; }
+.quote-note { margin-left:11px; }
+.quote-export { display:flex;align-items:center;justify-content:center;gap:7px;flex:none;background:#1b4140;color:#e3f4ee;border:1px solid #46766b;border-radius:8px;padding:9px 12px;font-size:14px; }
+.quote-export:hover,.quote-export:focus-visible { border-color:#78d9be; }
 .intro { display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:30px; }
 .status-col { display:flex;flex-direction:column;align-items:flex-end;gap:5px; }
 .schedule-hint { color:#93adaa;font-size:14px; }
@@ -40,8 +48,17 @@ h1,h2,p { margin-top:0; } h1 { font-size:34px;letter-spacing:-.035em;margin:0;li
 .panel{padding:24px 27px}
 .panel-header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:24px}
 .panel-header>span{font-size:15px;color:#91a8a7;white-space:nowrap;margin-top:21px}
-.line-frame{width:100%;height:237px;display:flex;flex-direction:column}
+.line-frame{width:100%;height:237px;display:flex;flex-direction:column;position:relative}
 .line-frame svg{width:100%;height:210px;overflow:visible}
+.line-frame circle{cursor:crosshair}
+.line-frame circle:focus-visible{outline:2px solid #e4fff5}
+.chart-tooltip{position:absolute;z-index:3;width:240px;max-width:calc(100% - 14px);background:#0a2228;border:1px solid #6bafa4;border-radius:9px;padding:10px 12px;color:#e4f3ef;font-size:13px;line-height:1.5;box-shadow:0 10px 26px #0009;pointer-events:none}
+.chart-tooltip.above{transform:translate(-50%,calc(-100% - 12px))}
+.chart-tooltip.below{transform:translate(-50%,12px)}
+.chart-tooltip>strong{font-size:15px;color:#ecfaf4;display:block;margin-bottom:5px}
+.chart-tooltip>div{display:flex;justify-content:space-between;gap:5px;border-top:1px solid #284449;padding:3px 0}
+.chart-tooltip>div span{color:#9abdb5;white-space:nowrap}
+.chart-tooltip>div b{font-variant-numeric:tabular-nums;font-size:13px;text-align:right;white-space:nowrap}
 .chart-axis{display:flex;justify-content:space-between;padding:0 15px 0 30px;color:#8ca5a4;font-size:15px}
 .chart-empty{height:237px;display:grid;place-items:center;color:#9ab6b3;font-size:14px;text-align:center;padding:15px}
 .fine{font-size:14px;line-height:1.65;color:#91aaa8;margin:10px 0 0}
@@ -69,4 +86,5 @@ h1,h2,p { margin-top:0; } h1 { font-size:34px;letter-spacing:-.035em;margin:0;li
 footer{margin-top:28px;max-width:1080px;color:#8ba3a2;font-size:14px;line-height:1.75}
 footer p{margin-bottom:7px}footer strong{color:#b6ccca;margin-right:5px}
 @media(max-width:800px){.metrics,.two-col{grid-template-columns:1fr}.content{padding-top:27px}.guide{order:0}.intro{align-items:start;flex-direction:column}.status-col{align-items:flex-start}h1{font-size:30px}.big{font-size:67px}}
-@media(max-width:530px){.topbar{padding:0 18px}.top-right>span{display:none}.brand{font-size:17px}.content{padding-left:15px;padding-right:15px}.metric,.panel{padding:21px}.metric-title{align-items:start;flex-direction:column}.big{font-size:60px}.panel-header>span{white-space:normal;text-align:right}.guide .range{grid-template-columns:20px 76px 1fr 28px;gap:5px;font-size:14px}.guide .range strong{font-size:14px}.reference-list>div{flex-direction:column;gap:3px}.history .panel-header{flex-direction:column;align-items:flex-start}.download{font-size:14px}}
+@media(max-width:800px){.daily-quote{align-items:flex-start;flex-direction:column;gap:10px}}
+@media(max-width:530px){.topbar{padding:0 18px}.top-right>span{display:none}.brand{font-size:17px}.content{padding-left:15px;padding-right:15px}.metric,.panel{padding:21px}.metric-title{align-items:start;flex-direction:column}.big{font-size:60px}.panel-header>span{white-space:normal;text-align:right}.guide .range{grid-template-columns:20px 76px 1fr 28px;gap:5px;font-size:14px}.guide .range strong{font-size:14px}.reference-list>div{flex-direction:column;gap:3px}.history .panel-header{flex-direction:column;align-items:flex-start}.download{font-size:14px}.quote-body p{font-size:16px}.daily-quote{padding:14px 16px}.quote-note{display:block;margin:3px 0 0}}
