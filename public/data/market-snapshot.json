@@ -1,10 +1,10 @@
 {
   "asOf": "2026-09-24",
-  "generatedAt": "2026-09-26T13:31:18.432Z",
+  "generatedAt": "2026-09-26T13:37:59.693Z",
   "source": "腾讯财经 / 上海证券交易所 / 东方财富 ETF 行情",
   "status": {
-    "star": null,
-    "etf": "Error: push2delay.eastmoney.com: Error: push2delay.eastmoney.com: HTTP 502 | 88.push2.eastmoney.com: TypeError: fetch failed | push2.eastmoney.com: Error: push2.eastmoney.com: HTTP 502"
+    "star": "Error: SSE endpoints unavailable: TypeError: fetch failed; TypeError: fetch failed",
+    "etf": "Error: push2delay.eastmoney.com: Error: push2delay.eastmoney.com: HTTP 502 | 88.push2.eastmoney.com: TypeError: fetch failed | push2.eastmoney.com: TypeError: fetch failed"
   },
   "history": [
     {
