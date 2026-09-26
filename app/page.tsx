@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { composeDays, parseTencent, type Day, type MarketRow } from "@/lib/market";
+import { nextScheduledRefresh } from "@/lib/refreshSchedule";
 
 type Result = { days: Day[]; quoteAt: (string|null)[]; source: string; checkedAt: string };
 const wan = (yi: number) => (yi/10000).toFixed(2);
@@ -92,23 +93,42 @@ export default function Home() {
   const [result,setResult]=useState<Result|null>(null);
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(true);
+  const requestId=useRef(0);
   const refresh=useCallback(async()=>{
+    const id=++requestId.current;
     setLoading(true);setError("");
-    try {setResult(await loadMarket());}
-    catch(e){setError(e instanceof Error?e.message:"行情读取失败");}
-    finally{setLoading(false);}
+    try {const next=await loadMarket();if(id===requestId.current)setResult(next);}
+    catch(e){if(id===requestId.current)setError(e instanceof Error?e.message:"行情读取失败");}
+    finally{if(id===requestId.current)setLoading(false);}
   },[]);
-  useEffect(()=>{refresh();const id=setInterval(refresh,2*60*1000);return()=>clearInterval(id)},[refresh]);
+  useEffect(()=>{
+    void refresh();
+    const poll=setInterval(()=>void refresh(),2*60*1000);
+    let scheduled:ReturnType<typeof setTimeout>;
+    const schedule=()=>{
+      scheduled=setTimeout(()=>{void refresh();schedule()},nextScheduledRefresh(Date.now()));
+    };
+    schedule();
+    const onVisibility=()=>{if(!document.hidden)void refresh()};
+    document.addEventListener("visibilitychange",onVisibility);
+    return()=>{clearInterval(poll);clearTimeout(scheduled);document.removeEventListener("visibilitychange",onVisibility);requestId.current++};
+  },[refresh]);
   const days=result?.days??[],latest=days.at(-1),prev=days.at(-2);
   const currentTier=latest?tier(latest.total/10000):null;
   const delta=latest&&prev?(latest.total/prev.total-1)*100:null;
-  const today=new Date(Date.now()+8*3600_000).toISOString().slice(0,10);
+  const nowBeijing=new Date(Date.now()+8*3600_000).toISOString();
+  const today=nowBeijing.slice(0,10),clock=nowBeijing.slice(11,16);
   const quoteTime=result?.quoteAt.filter((x):x is string=>!!x).sort().at(0);
-  const intraday=!!(latest&&quoteTime?.startsWith(today)&&quoteTime.slice(11)<"15:05");
+  const currentDay=latest?.date===today;
+  const closeConfirmed=!!(currentDay&&quoteTime?.startsWith(today)&&quoteTime.slice(11)>="15:00");
+  const waitingClose=!!(currentDay&&clock>="15:15"&&!closeConfirmed);
+  const waitingNoon=!!(currentDay&&clock>="12:00"&&clock<"13:00"&&(!quoteTime?.startsWith(today)||quoteTime.slice(11)<"11:30"));
+  const intraday=!!(currentDay&&!closeConfirmed&&!waitingClose);
+  const phase=waitingClose?"收盘数据待更新":waitingNoon?"午间数据待更新":intraday&&clock>="12:00"&&clock<"13:00"?"午间累计":intraday?"盘中累计":"收盘";
   return <main className="shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark"/>A股成交观察</div><div className="top-right"><span>沪深两市 · {intraday?"盘中更新":"最近交易日"}</span><button onClick={refresh} disabled={loading}><RefreshCw size={17} className={loading?"spinning":""}/>刷新</button></div></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark"/>A股成交观察</div><div className="top-right"><span>沪深两市 · {waitingClose?"收盘核对中":intraday?"盘中更新":"最近交易日"}</span><button onClick={refresh} disabled={loading}><RefreshCw size={17} className={loading?"spinning":""}/>刷新</button></div></header>
     <div className="content">
-      <div className="intro"><div><p className="eyebrow">MARKET ACTIVITY / DAILY</p><h1>成交活跃度</h1></div><div className="freshness"><span className={`dot ${latest?"good":""}`}/>{loading&&!latest?"正在读取行情数据":latest?`数据日期 ${latest.date}${intraday?" · 盘中累计":" · 收盘"}`:"暂无有效数据"}</div></div>
+      <div className="intro"><div><p className="eyebrow">MARKET ACTIVITY / DAILY</p><h1>成交活跃度</h1></div><div className="status-col"><div className="freshness"><span className={`dot ${latest?"good":""}`}/>{loading&&!latest?"正在读取行情数据":latest?`数据日期 ${latest.date} · ${phase}`:"暂无有效数据"}</div><div className="schedule-hint">北京时间 12:00 / 15:15 自动刷新</div></div></div>
       {error&&<div className="notice error" role="alert">{error} <button onClick={refresh}>重试</button></div>}
       {latest&&prev&&tier(prev.total/10000)!==currentTier&&<div className="notice" role="status">最近交易日成交额进入 <strong>{tiers[currentTier!].text} 万亿</strong> 区间。</div>}
       <div className="metrics">
@@ -120,7 +140,7 @@ export default function Home() {
         <section className="panel guide"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST</p><h2>指标与参考含义</h2></div><span>原图观察框架</span></div><div className="range-list">{tiers.map((t,i)=><div className={`range ${i===currentTier?"active":""}`} key={t.text}><span>0{i+1}</span><strong>{t.text}</strong><span>{t.name}</span>{i===currentTier&&<em>当前</em>}</div>)}</div><p className="fine">上表单位为单日万亿元；原图据此描述参与结构与板块行情。</p><div className="reference-list"><div><strong>11.38 万亿</strong><span>原图记录的本轮最低滚动值</span></div><div><strong>55—60 万亿</strong><span>原图：利润开始撤走的观察区间</span></div><div><strong>110—115 万亿</strong><span>原图：全部撤走的观察区间</span></div></div><p className="fine">此处单位为近 20 个交易日累计万亿元。均为原图的主观观察，不代表可验证的买卖信号。</p></section>
       </div>
       <section className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h2>近期交易日</h2><p className="history-unit">金额单位：万亿元</p></div><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button></div><div className="table-wrap"><div className="table-row table-head"><span>交易日</span><span>沪市</span><span>深市</span><span>合计</span><span>20 日累计</span></div>{days.slice(-10).reverse().map(d=><div className="table-row" key={d.date}><span>{d.date}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{d.roll20===undefined?"—":wan(d.roll20)}</span></div>)}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div></section>
-      <footer><p><strong>数据口径</strong> 腾讯行情上证指数与深证成指的沪、深市场成交额，单位由万元换算为万亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日指标由连续 20 个共同交易日合计，不补填休市日。</p><p><strong>更新与核对</strong> 页面开启时每 2 分钟读取一次；盘中显示累计值，收盘后显示最近交易日。最近行情还用同一数据源的独立即时报价字段核对。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer>
+      <footer><p><strong>数据口径</strong> 腾讯行情上证指数与深证成指的沪、深市场成交额，单位由万元换算为万亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日指标由连续 20 个共同交易日合计，不补填休市日。</p><p><strong>更新与核对</strong> 页面打开时，周一至周五北京时间 12:00、15:15 定点刷新，并每 2 分钟读取一次；重新打开页面也会立即读取。节假日及行情源尚未更新时保留上一交易日数据。最近行情还用同一数据源的独立即时报价字段核对。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer>
     </div>
   </main>;
 }
