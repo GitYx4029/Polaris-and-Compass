@@ -50,7 +50,15 @@ async function star(date){
   url.searchParams.set('PRODUCT_CODE','01,02,03,11,17');
   url.searchParams.set('type','inParams');
   url.searchParams.set('SEARCH_DATE',date);
-  const data=JSON.parse(await get(url,{'Referer':'https://www.sse.com.cn/'}));
+  let raw;
+  try {raw=await get(url,{'Referer':'https://www.sse.com.cn/'});}
+  catch(first){
+    // Exchange also serves the same public query below /sseQuery/.
+    url.pathname='/sseQuery/commonQuery.do';
+    try {raw=await get(url,{'Referer':'https://www.sse.com.cn/'});}
+    catch(second){throw new Error(`SSE endpoints unavailable: ${first}; ${second}`);}
+  }
+  const data=JSON.parse(raw);
   if(!Array.isArray(data.result)||data.result.length<3)throw new Error(`SSE ${date}: no daily breakdown`);
   const rows=data.result;
   const main=Object.values(rows[0]), kcb=Object.values(rows[2]);
@@ -68,6 +76,16 @@ async function star(date){
   return amount;
 }
 const etfUrl='https://push2delay.eastmoney.com/api/qt/clist/get';
+async function eastmoney(url){
+  const hosts=['push2delay.eastmoney.com','88.push2.eastmoney.com','push2.eastmoney.com'];
+  const failures=[];
+  for(const host of hosts){
+    url.hostname=host;
+    try{return JSON.parse(await get(url,{'Referer':'https://quote.eastmoney.com/'}));}
+    catch(error){failures.push(`${host}: ${String(error)}`);}
+  }
+  throw new Error(failures.join(' | '));
+}
 async function etf(asOf){
   const size=200;
   const all=[];
@@ -78,7 +96,7 @@ async function etf(asOf){
       ut:'bd1d9ddb04089700cf9c27f6f7426281',fltt:2,invt:2,fid:'f12',
       fs:'b:MK0021,b:MK0022,b:MK0023,b:MK0024,b:MK0827',
       fields:'f6,f12,f13,f14,f124,f297'}))url.searchParams.set(key,String(value));
-    const data=JSON.parse(await get(url,{'Referer':'https://quote.eastmoney.com/'})).data;
+    const data=(await eastmoney(url)).data;
     if(!data||!Array.isArray(data.diff)||!Number.isInteger(data.total))throw new Error('ETF list missing total or rows');
     if(page===1)expected=data.total;
     if(data.total!==expected)throw new Error('ETF list count changed during pagination');
