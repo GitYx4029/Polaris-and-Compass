@@ -90,15 +90,19 @@ async function etfTencent(asOf, etf300){
   async function worker(){
     while(next<groups.length){
       const group=groups[next++];
+      // Put a known liquid ETF last to detect truncation of long quote batches.
+      const request=group.includes('sh510300')?group:[...group,'sh510300'];
       const url=new URL('https://qt.gtimg.cn/');
-      url.searchParams.set('q',group.join(','));
+      url.searchParams.set('q',request.join(','));
       let raw;
       try{raw=await get(url);}catch{await pause(250);raw=await get(url);}
       const assignments=[...raw.matchAll(/v_(sh|sz)(\d{6})="([^"]*)";/g)];
-      if(assignments.length!==group.length)throw new Error(`Tencent ETF batch incomplete: ${assignments.length}/${group.length}`);
-      queried+=assignments.length;
+      if(!assignments.some(item=>item[1]+item[2]==='sh510300'))
+        throw new Error(`Tencent ETF batch truncated; ${assignments.length}/${request.length} quoted`);
+      queried+=group.length;
       for(const item of assignments){
         const symbol=item[1]+item[2], fields=item[3].split('~');
+        if(symbol==='sh510300'&&!group.includes(symbol))continue;
         if(!group.includes(symbol)||seen.has(symbol))throw new Error(`Tencent ETF duplicate or unexpected ${symbol}`);
         seen.add(symbol);
         if(fields[55]!=='ETF')continue;
