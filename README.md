@@ -1,6 +1,6 @@
 # Polaris and Compass · A股成交观察
 
-[在线使用](https://a-share-pulse-lxy-0924.reagan-park-6434.chatgpt.site/)
+[在线使用（GitHub Pages）](https://gityx4029.github.io/Polaris-and-Compass/)
 
 展示沪深两市单日成交额、近 20 个交易日滚动累计和交易日明细，支持下载历史 CSV。页面打开时，周一至周五北京时间 12:00、15:15 定点刷新，平时每 2 分钟更新，页面重新显示也会读取；每日轮换一条有出处的投资观点，支持导出观点库 CSV；行情读取失败时显示错误，不填入虚构数值。
 
@@ -25,6 +25,6 @@ npm run dev
 
 ## GitHub Pages 发布
 
-`main` 分支包含 GitHub Actions 工作流，执行 `npm run build` 后将 `out/` 发布到 Pages。需在仓库 Settings → Pages 选择 GitHub Actions 作为发布源。该版本无服务端，页面保持打开时按北京时间自动刷新；重新打开时立即抓取实时行情。GitHub Pages 在不同地区的连通性取决于当地网络，部署成功不代表中国大陆各运营商均稳定可达。
+`main` 分支包含 GitHub Actions 工作流，执行 `npm run build` 后将 `out/` 发布到 Pages；仓库的 Pages 来源已设为 GitHub Actions。该版本无服务端，页面保持打开时按北京时间自动刷新；重新打开时立即抓取实时行情。GitHub Pages 在不同地区的连通性取决于当地网络，部署成功不代表中国大陆各运营商均稳定可达。
 
 观点库保存在 `lib/investorQuotes.ts`，每条都附原始资料、具体位置和链接；页面的中文短句是依据原文归纳或意译，不是逐字引述。
