@@ -134,12 +134,23 @@ h1,h2,p { margin-top:0; } h1 { font-size:34px;letter-spacing:-.035em;margin:0;li
 .table-head{color:#91aaa8;font-size:15px;font-weight:500}
 .table-head .head-metric{display:flex;justify-content:flex-end;align-items:center;gap:5px}
 .table-head .data-export{opacity:.8}.table-head .data-export:hover{opacity:1}
+.mobile-history{display:none}
+.day-card{border:1px solid #34545a;background:#153038;border-radius:10px;overflow:hidden}
+.day-card summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(82px,1fr) minmax(95px,1fr) auto;gap:8px;align-items:center;padding:15px}
+.day-card summary::-webkit-details-marker{display:none}
+.day-date{color:#c5ddd5;font-size:14px;font-variant-numeric:tabular-nums}
+.day-total{text-align:right;font-variant-numeric:tabular-nums}.day-total strong{display:block;color:#eefaf3;font-size:19px}.day-total small{display:block;color:#9ed3c2;font-size:13px;margin-top:3px}
+.day-chevron{color:#9bbcb2;font-size:13px;white-space:nowrap}.day-card[open] .day-chevron{color:#6cd2b7}
+.day-detail-grid{border-top:1px solid #34545a;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;margin:0 15px;padding:15px 0}
+.day-detail-grid>div{min-width:0}.day-detail-grid span{display:block;color:#9ab8b2;font-size:13px}.day-detail-grid b{display:block;font-size:17px;color:#e8f7f1;font-variant-numeric:tabular-nums;margin-top:2px}.day-detail-grid b small{font-size:12px;font-weight:400;color:#a6c4b9}
+.day-download{margin:0 15px 15px;font-size:13px}
 .empty{padding:20px;color:#a5bebb;font-size:14px}
 footer{margin-top:28px;max-width:1080px;color:#8ba3a2;font-size:14px;line-height:1.75}
 footer p{margin-bottom:7px}footer strong{color:#b6ccca;margin-right:5px}
 @media(max-width:1000px){.guide-groups{grid-template-columns:1fr 1fr}.guide-block:last-child{grid-column:1/-1}}
 @media(max-width:800px){.metrics,.two-col,.guide-groups{grid-template-columns:1fr}.guide-block:last-child{grid-column:auto}.content{padding-top:27px}.intro{align-items:start;flex-direction:column}.status-col{align-items:flex-start}h1{font-size:30px}.big{font-size:67px}}
 @media(max-width:800px){.daily-quote{align-items:flex-start;flex-direction:column;gap:10px}}
-@media(max-width:650px){.rolling-head{grid-template-columns:1fr;gap:15px}.average-stat{border-left:0;border-top:1px solid #30494f;padding:15px 0 0}.rolling-stat .big{font-size:58px}.rolling-chart-heading{align-items:flex-start;flex-direction:column}.multi-trend .panel-header,.guide .panel-header{flex-direction:column}.panel-actions{margin-top:0}}
+@media(max-width:650px){.rolling-head{grid-template-columns:1fr;gap:15px}.average-stat{border-left:0;border-top:1px solid #30494f;padding:15px 0 0}.rolling-stat .big{font-size:58px}.rolling-chart-heading{align-items:flex-start;flex-direction:column}.multi-trend .panel-header,.guide .panel-header{flex-direction:column}.panel-actions{margin-top:0}.table-wrap{display:none}.mobile-history{display:grid;gap:9px}.guide-description,.fine{font-size:15px}.reference-entry small,.guide-block .reference-list span{font-size:14px}.depth-name small,.depth-data span{font-size:14px}}
 @media(max-width:530px){.topbar{padding:0 18px}.top-right>span{display:none}.brand{font-size:17px}.content{padding-left:15px;padding-right:15px}.metric,.panel{padding:21px}.metric-title{align-items:start;flex-direction:column}.big{font-size:60px}.panel-header>span{white-space:normal;text-align:right}.reference-list>div{flex-direction:column;gap:3px}.history .panel-header{flex-direction:column;align-items:flex-start}.download{font-size:14px}.quote-body p{font-size:16px}.daily-quote{padding:14px 16px}.quote-note{display:block;margin:3px 0 0}}
-@media(max-width:650px){.depth-row{grid-template-columns:1fr 130px;gap:8px}.depth-bar{grid-column:1/-1}.depth-data b{font-size:21px}.compact-number{font-size:39px}.compact-number span{display:block;margin-left:0;margin-top:2px}}
+@media(max-width:650px){.depth-row{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}.depth-bar{grid-column:1/-1}.depth-data b{font-size:21px}.compact-number{font-size:39px}.compact-number span{display:block;margin-left:0;margin-top:2px}.data-export.icon-only{width:36px;height:36px}.chart-tabs button{padding:10px 12px}}
+@media(max-width:370px){.day-card summary{padding:12px;grid-template-columns:1fr auto}.day-date{grid-column:1}.day-total{grid-column:1;text-align:left}.day-chevron{grid-column:2;grid-row:1/3}.day-total strong{font-size:17px}.day-chevron{font-size:12px}.metric-title small{font-size:14px}.split{gap:9px}}

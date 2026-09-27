@@ -7,7 +7,7 @@ import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { nextScheduledRefresh } from "@/lib/refreshSchedule";
 
 type Detail = { date:string;sh:number;sz:number;star?:number;starCheckedAt?:string;etf?:number;etfSh?:number;etfSz?:number;etfCount?:number;etfActive?:number;etfSource?:string;etfCheckedAt?:string;etf510300?:number|null };
-type Snapshot = { asOf:string;generatedAt:string;history:Detail[];status?:{star?:string|null;etf?:string|null} };
+type Snapshot = { asOf:string;generatedAt:string;history:Detail[];quoteAt?:[string|null,string|null];status?:{star?:string|null;etf?:string|null} };
 type Result = { days: Day[]; quoteAt: (string|null)[]; source: string; checkedAt: string;
   snapshot:Snapshot|null; etf300:Map<string,number>|null };
 const wan = (yi: number) => (yi/10000).toFixed(2);
@@ -47,7 +47,32 @@ function browserKline(symbol: "sh000001"|"sz399001"|"sh510300") {
   });
 }
 
-async function loadMarket():Promise<Result> {
+const snapshotRemote="https://gityx4029.github.io/Polaris-and-Compass/data/market-snapshot.json";
+async function fetchSnapshot():Promise<Snapshot|null>{
+  const path=window.location.hostname.endsWith(".github.io")
+    ? "/Polaris-and-Compass/data/market-snapshot.json":"/api/snapshot";
+  const read=async(url:string)=>{
+    const response=await fetch(`${url}?t=${Date.now()}`,{cache:"no-store",signal:AbortSignal.timeout(8000)});
+    if(!response.ok)throw new Error(`快照 ${response.status}`);
+    const value=await response.json() as Snapshot;
+    if(!Array.isArray(value.history)||value.history.length<20||!/^\d{4}-\d\d-\d\d$/.test(value.asOf))throw new Error("快照格式异常");
+    const latest=value.history.at(-1);
+    const todayChina=new Date(Date.now()+8*3600_000).toISOString().slice(0,10);
+    if(latest?.date!==value.asOf||value.asOf>todayChina||!Number.isFinite(latest.sh)||latest.sh<=0||!Number.isFinite(latest.sz)||latest.sz<=0)throw new Error("快照交易日不一致");
+    return value;
+  };
+  try{return await read(path)}
+  catch {if(path!=="/api/snapshot")return null;try{return await read(snapshotRemote)}catch{return null}}
+}
+
+function resultFromSnapshot(snapshot:Snapshot):Result {
+  const days=composeDays(snapshot.history.map(({date,sh,sz})=>({date,sh,sz})));
+  if(days.length<20||days.at(-1)?.date!==snapshot.asOf)throw new Error("核验快照缺少完整交易日");
+  return {days,quoteAt:snapshot.quoteAt??[null,null],source:"定时核验快照（腾讯历史行情）",
+    checkedAt:new Date().toISOString(),snapshot,etf300:null};
+}
+
+async function fetchLiveRows():Promise<{rows:MarketRow[];quoteAt:(string|null)[];source:string}>{
   let rows:MarketRow[], quoteAt:(string|null)[], source:string;
   try {
     // GitHub Pages is static; use Tencent's browser script response there.
@@ -63,31 +88,37 @@ async function loadMarket():Promise<Result> {
     }));
     quoteAt=[sh.quoteAt,sz.quoteAt]; source="腾讯行情（浏览器直连）";
   }
+  return {rows,quoteAt,source};
+}
+
+async function loadMarket(onSnapshot:(interim:Result)=>void):Promise<Result> {
+  // Start the verified snapshot and live quote at the same time. The snapshot
+  // can render first when an upstream provider is slow or temporarily blocked.
+  const snapshotPromise=fetchSnapshot().then(snapshot=>{
+    if(snapshot){try{onSnapshot(resultFromSnapshot(snapshot))}catch{}}
+    return snapshot;
+  });
+  const livePromise=fetchLiveRows().then(value=>({value,error:null})).catch(error=>({value:null,error}));
+  const [{value:live,error},snapshot]=await Promise.all([livePromise,snapshotPromise]);
+  if(!live){if(snapshot)return resultFromSnapshot(snapshot);throw error??new Error("行情与快照均不可用")}
+  const {rows,quoteAt,source}=live;
   const days=composeDays(rows);
-  if(days.length<20)throw new Error(`仅取得 ${days.length} 个完整交易日，无法核实近20日成交额。`);
-  const snapshotUrl=window.location.hostname.endsWith(".github.io")
-    ? `${window.location.pathname.split("/").filter(Boolean).length?"/Polaris-and-Compass":""}/data/market-snapshot.json`
-    : "https://gityx4029.github.io/Polaris-and-Compass/data/market-snapshot.json";
-  const snapshot=await fetch(`${snapshotUrl}?t=${Date.now()}`,{cache:"no-store"}).then(async response=>{
-      if(!response.ok)throw new Error(`快照 ${response.status}`);
-      const value=await response.json() as Snapshot;
-      if(!Array.isArray(value.history)||!/^\d{4}-\d\d-\d\d$/.test(value.asOf))throw new Error("快照格式异常");
-      return value;
-    }).catch(()=>null);
+  const todayChina=new Date(Date.now()+8*3600_000).toISOString().slice(0,10);
+  if(days.length<20||days.at(-1)!.date>todayChina){if(snapshot)return resultFromSnapshot(snapshot);throw new Error(`仅取得 ${days.length} 个完整交易日，无法核实近20日成交额。`)}
+  if(snapshot&&snapshot.asOf>days.at(-1)!.date)return resultFromSnapshot(snapshot);
   // Verified past 510300 observations are already in the daily snapshot. Only
   // request its full K-line when today's session could be newer than the snapshot.
   const latestDate=days.at(-1)?.date;
-  const todayChina=new Date(Date.now()+8*3600_000).toISOString().slice(0,10);
   const snapshotHas300=snapshot?.history.some(item=>item.date===latestDate&&typeof item.etf510300==="number")??false;
   const etf300=latestDate===todayChina||!snapshotHas300
     ?await browserKline("sh510300").then(data=>data.amounts).catch(()=>null):null;
   return {days,quoteAt,source,checkedAt:new Date().toISOString(),snapshot,etf300};
 }
 
-function downloadHistory(result:Result) {
+function downloadHistory(result:Result,onlyDate?:string) {
   const detail=new Map(result.snapshot?.history.map(item=>[item.date,item])??[]);
   const header="交易日,上证市场成交额(亿元),深证市场成交额(亿元),沪深合计成交额(亿元),科创板成交额(亿元),沪深ETF成交额(亿元),沪市ETF成交额(亿元),深市ETF成交额(亿元),510300成交额(亿元),近20交易日累计成交额(亿元),近20交易日平均成交额(亿元),资金温度(倍),科创核对时间,ETF核对时间,ETF来源,沪深行情来源,行情核对时间";
-  const lines=result.days.map(d=>{
+  const lines=result.days.filter(day=>!onlyDate||day.date===onlyDate).map(d=>{
     const extra=detail.get(d.date),etf300=result.etf300?.get(d.date)??extra?.etf510300;
     return [d.date,d.sh.toFixed(4),d.sz.toFixed(4),d.total.toFixed(4),
       extra?.star?.toFixed(4)??"",extra?.etf?.toFixed(4)??"",extra?.etfSh?.toFixed(4)??"",extra?.etfSz?.toFixed(4)??"",etf300?.toFixed(4)??"",
@@ -97,7 +128,7 @@ function downloadHistory(result:Result) {
   const file=new Blob(["\ufeff",header,"\r\n",lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(file);
   const anchor=document.createElement("a"); anchor.href=url;
-  anchor.download=`市场成交额_${result.days[0].date}_${result.days.at(-1)!.date}.csv`;
+  anchor.download=onlyDate?`市场成交额_${onlyDate}.csv`:`市场成交额_${result.days[0].date}_${result.days.at(-1)!.date}.csv`;
   document.body.appendChild(anchor); anchor.click(); anchor.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -194,6 +225,25 @@ function HistoryTableHead({result}:{result:Result|null}){
   const columns:[MetricKey,string][]=[["sh","上证"],["sz","深证"],["total","沪深合计"],["star","科创板"],["etf","沪深 ETF"],["etf510300","510300"],["roll20","20 日累计"],["avg20","20 日平均"],["heat","资金温度"]];
   return <div className="table-row table-head"><span>交易日</span>{columns.map(([key,label])=><span className="head-metric" key={key}><span>{label}</span><DataDownload result={result} metric={key} iconOnly/></span>)}</div>;
 }
+function MobileHistory({days,result}:{days:Day[];result:Result|null}){
+  return <div className="mobile-history" aria-label="近期交易日手机视图">{!days.length&&<div className="empty">正在核对交易日数据…</div>}{days.slice(-10).reverse().map(day=>{
+    const extra=result?.snapshot?.history.find(item=>item.date===day.date);
+    const single=result?.etf300?.get(day.date)??extra?.etf510300;
+    const rows:[string,string,string][]=[
+      ["上证市场",wan(day.sh),"万亿元"],["深证市场",wan(day.sz),"万亿元"],
+      ["科创板",extra?.star!==undefined?yi(extra.star):"—","亿元"],
+      ["沪深 ETF",extra?.etf!==undefined?yi(extra.etf):"—","亿元"],
+      ["510300",single!=null?yi(single):"—","亿元"],
+      ["20 日累计",day.roll20!==undefined?wan(day.roll20):"—","万亿元"],
+      ["20 日平均",day.avg20!==undefined?yi(day.avg20):"—","亿元"],
+      ["资金温度",day.heat!==undefined?(day.heat*100).toFixed(1):"—","%"]
+    ];
+    return <details className="day-card" key={day.date}><summary><span className="day-date">{day.date}</span><span className="day-total"><strong>{wan(day.total)} 万亿</strong><small>资金温度 {day.heat!==undefined?(day.heat*100).toFixed(1):"—"}%</small></span><span className="day-chevron">明细⌄</span></summary>
+      <div className="day-detail-grid">{rows.map(([label,value,unit])=><div key={label}><span>{label}</span><b>{value} <small>{value==="—"?"":unit}</small></b></div>)}</div>
+      <button className="download day-download" onClick={()=>result&&downloadHistory(result,day.date)} disabled={!result}><Download size={15}/>下载 {day.date} 数据</button>
+    </details>;
+  })}</div>;
+}
 
 function MarketChart({days,result}:{days:Day[];result:Result|null}) {
   const [mode,setMode]=useState<ChartKey>("total");
@@ -243,7 +293,7 @@ export default function Home() {
     inFlight.current=true;
     const id=++requestId.current;
     setLoading(true);setError("");
-    try {const next=await loadMarket();if(id===requestId.current)setResult(next);}
+    try {const next=await loadMarket(interim=>{if(id===requestId.current)setResult(interim)});if(id===requestId.current)setResult(next);}
     catch(e){if(id===requestId.current)setError(e instanceof Error?e.message:"行情读取失败");}
     finally{inFlight.current=false;if(id===requestId.current)setLoading(false);}
   },[]);
@@ -331,7 +381,7 @@ export default function Home() {
         <p className="fine guide-disclaimer">以上解读是用户设定的观察规则，数字由真实成交额计算；阈值及对应操作未经过策略验证，不构成投资建议。</p>
         <div className="indicator-reference"><strong>层级与作用</strong><p>沪深合计：全市场成交活跃度；上证、深证：观察两地市场分布；科创板：观察沪市科技板块；沪深 ETF：观察交易所基金；510300：观察单只宽基 ETF。20 日累计：观察中期总量；20 日平均：作为当日比较基准；资金温度：当日成交额相对基准的倍数。</p></div>
       </section>
-      <section className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h2>近期交易日</h2><p className="history-unit">沪、深、合计、20 日累计：万亿元；科创、ETF、510300、20 日平均：亿元；资金温度：倍</p></div><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button></div><div className="table-wrap"><HistoryTableHead result={result}/>{days.slice(-10).reverse().map(d=>{const extra=result?.snapshot?.history.find(item=>item.date===d.date),single=result?.etf300?.get(d.date)??extra?.etf510300;return <div className="table-row" key={d.date}><span>{d.date}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{extra?.star!==undefined?yi(extra.star):"—"}</span><span>{extra?.etf!==undefined?yi(extra.etf):"—"}</span><span>{single!=null?yi(single):"—"}</span><span>{d.roll20===undefined?"—":wan(d.roll20)}</span><span>{d.avg20===undefined?"—":yi(d.avg20)}</span><span>{d.heat===undefined?"—":d.heat.toFixed(2)}</span></div>})}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div><p className="fine">导出 CSV 保留底层“亿元”数值，细分市场历史仅包含已核实日期；空白表示尚无可靠记录。</p></section>
+      <section className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h2>近期交易日</h2><p className="history-unit">沪、深、合计、20 日累计：万亿元；科创、ETF、510300、20 日平均：亿元；资金温度：倍</p></div><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button></div><div className="table-wrap"><HistoryTableHead result={result}/>{days.slice(-10).reverse().map(d=>{const extra=result?.snapshot?.history.find(item=>item.date===d.date),single=result?.etf300?.get(d.date)??extra?.etf510300;return <div className="table-row" key={d.date}><span>{d.date}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{extra?.star!==undefined?yi(extra.star):"—"}</span><span>{extra?.etf!==undefined?yi(extra.etf):"—"}</span><span>{single!=null?yi(single):"—"}</span><span>{d.roll20===undefined?"—":wan(d.roll20)}</span><span>{d.avg20===undefined?"—":yi(d.avg20)}</span><span>{d.heat===undefined?"—":d.heat.toFixed(2)}</span></div>})}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div><MobileHistory days={days} result={result}/><p className="fine">导出 CSV 保留底层“亿元”数值，细分市场历史仅包含已核实日期；空白表示尚无可靠记录。</p></section>
       <footer><p><strong>数据口径</strong> 页面中的“量”统一指成交额，不是成交股数或 ETF 份数。腾讯行情上证指数与深证成指的沪、深市场成交额由万元换算为亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日累计由连续 20 个共同交易日计算，20 日均量＝累计额 ÷ 20，资金温度＝当日沪深合计 ÷ 20 日均量。</p><p><strong>更新与核对</strong> 页面打开时，北京时间 12:00、15:15 定点刷新，在北京时间工作日 09:15—16:30 的可变时段每 2 分钟核对，其他时段不重复轮询；重新打开页面也会立即读取。科创板、ETF 的数据由仓库工作流于交易日 12:10、15:25 抓取并核验，服务延迟或节假日时以数据日期为准；无同日合格数据时显示“待核实”。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}{result?.snapshot&&` 细分项快照 ${new Date(result.snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a> · <a href="https://gu.qq.com/sh510300" target="_blank" rel="noreferrer">腾讯财经·510300</a> · <a href="https://www.sse.com.cn/market/stockdata/overview/day/" target="_blank" rel="noreferrer">上交所·股票成交概况</a> · <a href="https://qt.gtimg.cn/q=sh510300" target="_blank" rel="noreferrer">腾讯财经·ETF 报价</a> · <a href="https://quote.eastmoney.com/center/gridlist.html#fund_etf" target="_blank" rel="noreferrer">东方财富·ETF 行情</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer>
     </div>
   </main>;

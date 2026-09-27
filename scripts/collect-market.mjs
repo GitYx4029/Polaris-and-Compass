@@ -221,6 +221,8 @@ try{
     etfCount:value.count,etfActive:value.active,etfSource:value.source,etfCheckedAt:now.toISOString()});
 }catch(e){etfStatus=String(e);console.warn(etfStatus)}
 const payload={asOf:latestDate,generatedAt:now.toISOString(),
+  quoteAt:[sh.quoteAt,sz.quoteAt].map(stamp=>/^\d{14}$/.test(stamp??'')
+    ?`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6,8)} ${stamp.slice(8,10)}:${stamp.slice(10,12)}`:null),
   source:`腾讯财经 / 上海证券交易所 / ${old.get(latestDate)?.etfSource??'ETF 待核实'}`,
   status:{star:starStatus,etf:etfStatus},
   history:[...old.values()].filter(x=>x.date<=latestDate).sort((a,b)=>a.date.localeCompare(b.date)).slice(-300)};
