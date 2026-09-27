@@ -1,13 +1,13 @@
 {
   "asOf": "2026-09-24",
-  "generatedAt": "2026-09-27T06:28:57.800Z",
+  "generatedAt": "2026-09-27T06:37:30.354Z",
   "quoteAt": [
     "2026-09-24 16:14",
     "2026-09-24 16:14"
   ],
   "source": "腾讯财经 / 上海证券交易所 / 腾讯财经全代码段报价",
   "status": {
-    "star": null,
+    "star": "Error: SSE endpoints unavailable: Error: query.sse.com.cn: HTTP 403; Error: query.sse.com.cn: HTTP 403",
     "etf": null
   },
   "history": [
@@ -1856,7 +1856,7 @@
       "etfCount": 1855,
       "etfActive": 1684,
       "etfSource": "腾讯财经全代码段报价",
-      "etfCheckedAt": "2026-09-27T06:28:57.800Z"
+      "etfCheckedAt": "2026-09-27T06:37:30.354Z"
     }
   ]
 }
