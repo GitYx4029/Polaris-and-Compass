@@ -6,7 +6,7 @@ import { composeDays, parseTencent, type Day, type MarketRow } from "@/lib/marke
 import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { nextScheduledRefresh } from "@/lib/refreshSchedule";
 
-type Detail = { date:string;sh:number;sz:number;star?:number;starCheckedAt?:string;etf?:number;etfSh?:number;etfSz?:number;etfCount?:number;etfActive?:number;etfSource?:string;etfCheckedAt?:string;etf510300?:number|null };
+type Detail = { date:string;sh:number;sz:number;star?:number;starCheckedAt?:string;etf?:number;etfSh?:number;etfSz?:number;etfCount?:number;etfActive?:number;etfSource?:string;etfCheckedAt?:string;etfReferenceUrl?:string;etf510300?:number|null };
 type Snapshot = { asOf:string;generatedAt:string;history:Detail[];quoteAt?:[string|null,string|null];status?:{star?:string|null;etf?:string|null} };
 type Result = { days: Day[]; quoteAt: (string|null)[]; source: string; checkedAt: string;
   snapshot:Snapshot|null; etf300:Map<string,number>|null };
@@ -117,13 +117,13 @@ async function loadMarket(onSnapshot:(interim:Result)=>void):Promise<Result> {
 
 function downloadHistory(result:Result,onlyDate?:string) {
   const detail=new Map(result.snapshot?.history.map(item=>[item.date,item])??[]);
-  const header="交易日,上证市场成交额(亿元),深证市场成交额(亿元),沪深合计成交额(亿元),科创板成交额(亿元),沪深ETF成交额(亿元),沪市ETF成交额(亿元),深市ETF成交额(亿元),510300成交额(亿元),近20交易日累计成交额(亿元),近20交易日平均成交额(亿元),资金温度(倍),科创核对时间,ETF核对时间,ETF来源,沪深行情来源,行情核对时间";
+  const header="交易日,上证市场成交额(亿元),深证市场成交额(亿元),沪深合计成交额(亿元),科创板成交额(亿元),沪深ETF成交额(亿元),沪市ETF成交额(亿元),深市ETF成交额(亿元),510300成交额(亿元),近20交易日累计成交额(亿元),近20交易日平均成交额(亿元),资金温度(倍),科创核对时间,ETF核对时间,ETF来源,ETF核验链接,沪深行情来源,行情核对时间";
   const lines=result.days.filter(day=>!onlyDate||day.date===onlyDate).map(d=>{
     const extra=detail.get(d.date),etf300=result.etf300?.get(d.date)??extra?.etf510300;
     return [d.date,d.sh.toFixed(4),d.sz.toFixed(4),d.total.toFixed(4),
       extra?.star?.toFixed(4)??"",extra?.etf?.toFixed(4)??"",extra?.etfSh?.toFixed(4)??"",extra?.etfSz?.toFixed(4)??"",etf300?.toFixed(4)??"",
       d.roll20?.toFixed(4)??"",d.avg20?.toFixed(4)??"",d.heat?.toFixed(6)??"",
-      extra?.starCheckedAt??"",extra?.etfCheckedAt??"",extra?.etfSource??"",result.source,result.checkedAt].join(",");
+      extra?.starCheckedAt??"",extra?.etfCheckedAt??"",extra?.etfSource??"",extra?.etfReferenceUrl??"",result.source,result.checkedAt].join(",");
   });
   const file=new Blob(["\ufeff",header,"\r\n",lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(file);
@@ -146,6 +146,7 @@ function downloadQuotes() {
 
 function Chart({data}:{data:Day[]}) {
   const [hover,setHover]=useState<number|null>(null);
+  const [picked,setPicked]=useState<number|null>(null);
   const pts=data.filter(d=>d.roll20!==undefined).slice(-45);
   if(pts.length<2)return <div className="chart-empty">凑齐 21 个完整交易日后绘制滚动趋势</div>;
   const w=900,h=230,p=30,values=pts.map(d=>d.roll20!/10000);
@@ -154,7 +155,8 @@ function Chart({data}:{data:Day[]}) {
   const x=(i:number)=>p+i*(w-p*2)/(pts.length-1);
   const y=(v:number)=>h-p-(v-min)*(h-p*2)/(max-min);
   const path=pts.map((d,i)=>`${i?"L":"M"}${x(i)},${y(d.roll20!/10000)}`).join(" ");
-  const selected=hover!==null?pts[hover]:undefined;
+  const activeIndex=hover??Math.min(picked??pts.length-1,pts.length-1);
+  const selected=pts[activeIndex];
   return <div className="line-frame"><svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label="近20交易日累计成交额走势"
     onPointerMove={event=>{
       const rect=event.currentTarget.getBoundingClientRect();
@@ -163,18 +165,21 @@ function Chart({data}:{data:Day[]}) {
     }} onPointerLeave={()=>setHover(null)}>
     {[55,60,110,115].filter(v=>v>min&&v<max).map(v=><g key={v}><line x1={p} x2={w-p} y1={y(v)} y2={y(v)} stroke="#477078" strokeDasharray="5 7"/><text x={w-p-4} y={y(v)-7} textAnchor="end" fill="#8aa5a7" fontSize="16">{v} 万亿</text></g>)}
     <path d={path} fill="none" stroke="#42c6b1" strokeWidth="3.5" vectorEffect="non-scaling-stroke"/>
-    {selected&&<line x1={x(hover!)} x2={x(hover!)} y1={p} y2={h-p} stroke="#91ddd0" strokeDasharray="4 5" vectorEffect="non-scaling-stroke"/>}
-    {pts.map((d,i)=><circle key={d.date} cx={x(i)} cy={y(d.roll20!/10000)} r={i===hover?"7":"4"} fill="#42c6b1"
+    <line x1={x(activeIndex)} x2={x(activeIndex)} y1={p} y2={h-p} stroke="#91ddd0" strokeDasharray="4 5" vectorEffect="non-scaling-stroke"/>
+    {pts.map((d,i)=><circle key={d.date} cx={x(i)} cy={y(d.roll20!/10000)} r={i===activeIndex?"7":"4"} fill="#42c6b1"
       tabIndex={0} aria-label={`${d.date}，20日累计 ${(d.roll20!/10000).toFixed(4)} 万亿元`}
-      onFocus={()=>setHover(i)} onBlur={()=>setHover(null)} onClick={()=>setHover(i)}/>)}
-  </svg>{selected&&<div className={`chart-tooltip ${y(selected.roll20!/10000)<110?"below":"above"}`}
-    style={{left:`clamp(120px, ${x(hover!)/w*100}%, calc(100% - 120px))`,top:`${y(selected.roll20!/10000)/h*210}px`}} role="status">
+      onFocus={()=>setHover(i)} onBlur={()=>setHover(null)} onClick={()=>setPicked(i)}/>)}
+  </svg>{(hover!==null||picked!==null)&&<div className={`chart-tooltip ${y(selected.roll20!/10000)<110?"below":"above"}`}
+    style={{left:`clamp(120px, ${x(activeIndex)/w*100}%, calc(100% - 120px))`,top:`${y(selected.roll20!/10000)/h*210}px`}} role="status">
     <strong>{selected.date}</strong><div><span>20 日累计</span><b>{(selected.roll20!/10000).toFixed(4)} 万亿元</b></div>
     <div><span>20 日均量</span><b>{yi(selected.avg20!)} 亿元</b></div>
     <div><span>资金温度</span><b>{selected.heat!.toFixed(3)} 倍</b></div>
     <div><span>当日合计</span><b>{(selected.total/10000).toFixed(4)} 万亿元</b></div>
     <div><span>沪市 / 深市</span><b>{(selected.sh/10000).toFixed(4)} / {(selected.sz/10000).toFixed(4)} 万亿元</b></div>
-  </div>}<div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div></div>;
+  </div>}<div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div>
+  <label className="chart-scrubber"><span>拖动选择交易日</span><input type="range" min={0} max={pts.length-1} step={1} value={Math.min(picked??pts.length-1,pts.length-1)}
+    onChange={event=>{setHover(null);setPicked(Number(event.currentTarget.value))}} aria-label="选择滚动累计交易日"/><strong>{selected.date}</strong></label>
+  <p className="chart-readout">20 日累计 <b>{(selected.roll20!/10000).toFixed(4)} 万亿元</b> · 当日 <b>{(selected.total/10000).toFixed(4)} 万亿元</b> · 资金温度 <b>{(selected.heat!*100).toFixed(1)}%</b></p></div>;
 }
 
 const chartModes=[
@@ -203,14 +208,14 @@ function metricValue(result:Result,day:Day,key:MetricKey):number|undefined {
 }
 function downloadMetric(result:Result,key:MetricKey){
   const field=(value:string|number)=>`"${String(value).replace(/"/g,'""')}"`;
-  const lines=["交易日,指标,数值,单位,数据来源,核对时间(ISO 8601)"];
+  const lines=["交易日,指标,数值,单位,数据来源,核对时间(ISO 8601),核验链接"];
   for(const day of result.days){
     const value=metricValue(result,day,key);
     if(value===undefined||!Number.isFinite(value))continue;
     const extra=result.snapshot?.history.find(item=>item.date===day.date);
     const detail=key==="star"?extra?.starCheckedAt:key==="etf"||key==="etfSh"||key==="etfSz"?extra?.etfCheckedAt:undefined;
     const source=key==="star"?"上海证券交易所":key==="etf"||key==="etfSh"||key==="etfSz"?extra?.etfSource??"ETF 行情":key==="etf510300"?"腾讯财经·510300":result.source;
-    lines.push([day.date,metricLabels[key],value.toFixed(key==="heat"?6:4),key==="heat"?"倍":"亿元",source,detail??result.checkedAt].map(field).join(","));
+    lines.push([day.date,metricLabels[key],value.toFixed(key==="heat"?6:4),key==="heat"?"倍":"亿元",source,detail??result.checkedAt,key==="etf"||key==="etfSh"||key==="etfSz"?extra?.etfReferenceUrl??"":""].map(field).join(","));
   }
   const url=URL.createObjectURL(new Blob(["\ufeff",lines.join("\r\n")],{type:"text/csv;charset=utf-8"}));
   const anchor=document.createElement("a");anchor.href=url;anchor.download=`${metricLabels[key]}_${result.days.at(-1)?.date??"历史"}.csv`;
@@ -255,8 +260,9 @@ function MarketChart({days,result}:{days:Day[];result:Result|null}) {
     const value=mode==="star"?extra?.star:mode==="etf"?extra?.etf
       :mode==="etf510300"?(result?.etf300?.get(day.date)??extra?.etf510300)
       :day[mode];
-    return {date:day.date,value:typeof value==="number"&&value>0?value/selectedMode.scale:null};
-  }).filter((point):point is {date:string;value:number}=>point.value!==null).slice(-40);
+    return {date:day.date,value:typeof value==="number"&&value>0?value/selectedMode.scale:null,
+      source:extra?.etfSource,url:extra?.etfReferenceUrl};
+  }).filter((point):point is {date:string;value:number;source:string|undefined;url:string|undefined}=>point.value!==null).slice(-40);
   const w=900,h=190,p=26,values=pts.map(point=>point.value);
   const low=values.length?Math.min(...values):0, high=values.length?Math.max(...values):1;
   const min=Math.max(0,low-(high-low||high*.1)*.2),max=high+(high-low||high*.1)*.2;
@@ -277,7 +283,10 @@ function MarketChart({days,result}:{days:Day[];result:Result|null}) {
       {focus&&<circle cx={x(hover!)} cy={y(focus.value)} r="7" fill="#d5fff0"/>}
     </svg>{focus&&<div className="chart-tooltip" style={{left:`clamp(110px,${x(hover!)/w*100}%,calc(100% - 110px))`,top:`${y(focus.value)/h*170}px`,transform:"translate(-50%,-105%)"}} role="status"><strong>{focus.date}</strong><div><span>{selectedMode.label}</span><b>{focus.value.toFixed(4)} {selectedMode.unit}</b></div></div>}
     <div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div></div>}
-    <p className="fine">科创板和 ETF 的历史值从成功核实之日逐日积累；单只 ETF 包含在 ETF 总额中，科创板包含在沪市内，请勿横向相加。</p>
+    {mode==="etf"&&pts.some(point=>point.url)&&<details className="chart-sources"><summary>查看 ETF 历史补录来源（{pts.filter(point=>point.url).length} 个交易日）</summary>
+      <div>{pts.filter(point=>point.url).map(point=><a key={point.date} href={point.url} target="_blank" rel="noreferrer">{point.date} · 财闻日报 · {point.value.toFixed(2)} 亿元</a>)}</div></details>}
+    {mode==="etf"&&focus?.url&&<p className="fine">{focus.date} 为历史报道补录：<a href={focus.url} target="_blank" rel="noreferrer">查看财闻 ETF 日报</a>。与定时采集记录分开标注来源。</p>}
+    <p className="fine">科创板和 ETF 的历史值从已核实记录逐日积累；ETF 早期补录值单独标明来源。单只 ETF 包含在 ETF 总额中，科创板包含在沪市内，请勿横向相加。</p>
   </section>;
 }
 
@@ -365,6 +374,7 @@ export default function Home() {
       </section>
       <MarketChart days={days} result={result}/>
       <section className="panel guide" id="reference"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST / 解读参考</p><h2>指标、阈值与观察含义</h2></div><span>按对应数据口径分区</span></div>
+        <p className="reference-credit">本页观察工具箱来自“袁莹投资思维”；以下阈值用于标注原有观察规则，实际数据由行情与交易所来源核对。</p>
         <div className="guide-groups">
           <div className="guide-block" id="guide-daily"><span className="guide-index">01 · 当日沪深成交额</span><h3>指南针</h3><p className="guide-description">大 A 每日成交额 · 单位：万亿元</p>
             <div className="range-list">{tiers.map((t,i)=><div className={`reference-entry ${i===currentTier?"active":""}`} key={t.text}><strong>{t.text}</strong><div><b>{t.name}</b><small>{t.note}</small></div>{i===currentTier&&<em>当前</em>}</div>)}</div>

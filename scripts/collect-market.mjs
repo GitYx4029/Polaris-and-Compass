@@ -194,6 +194,18 @@ for(const record of history){
   old.set(record.date,{...previous,...record,
     etf510300:record.etf510300??previous.etf510300??null});
 }
+// One-time historical backfill from dated ETF market reports. Keep each
+// report URL beside its number; never replace a live, fully scanned record.
+const archive=JSON.parse(await fs.readFile(path.resolve('data/etf-archive.json'),'utf8'));
+for(const item of archive){
+  const row=old.get(item.date);
+  if(!row||row.etf!=null)continue;
+  if(!/^\d{4}-\d\d-\d\d$/.test(item.date)||!positive(item.etf)||
+    !/^https:\/\/www\.caiwennews\.com\/article\/\d+\.shtml$/.test(item.etfReferenceUrl))
+    throw new Error(`ETF historical citation invalid: ${item.date}`);
+  old.set(item.date,{...row,etf:item.etf,etfSource:'财闻 ETF 日报（历史补录）',
+    etfReferenceUrl:item.etfReferenceUrl,etfCheckedAt:now.toISOString()});
+}
 const latestDate=history.at(-1).date;
 const specialDate=latestDate;
 let starStatus=null,etfStatus=null;

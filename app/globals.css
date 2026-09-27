@@ -84,6 +84,16 @@ h1,h2,p { margin-top:0; } h1 { font-size:34px;letter-spacing:-.035em;margin:0;li
 .panel-header{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:24px}
 .panel-header>span{font-size:15px;color:#91a8a7;white-space:nowrap;margin-top:21px}
 .line-frame{width:100%;height:237px;display:flex;flex-direction:column;position:relative}
+.rolling-summary .line-frame{height:auto;min-height:310px}
+.chart-scrubber{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;margin:13px 3px 3px;color:#a8c7bf;font-size:14px}
+.chart-scrubber input{width:100%;accent-color:#56d4b9;cursor:ew-resize;min-height:32px}
+.chart-scrubber strong{color:#e5f4ed;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chart-readout{margin:6px 3px 0;color:#a4c1b8;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums}
+.chart-readout b{color:#e7f8f0;font-weight:600}
+.chart-sources{margin:8px 0;color:#bed8d0;font-size:14px}
+.chart-sources summary{cursor:pointer;color:#89d5c1}
+.chart-sources>div{display:flex;flex-wrap:wrap;gap:8px 15px;margin:12px 0}
+.chart-sources a{color:#c8eee3;text-underline-offset:3px}
 .line-frame svg{width:100%;height:210px;overflow:visible}
 .line-frame circle{cursor:crosshair}
 .line-frame circle:focus-visible{outline:2px solid #e4fff5}
@@ -109,6 +119,7 @@ h1,h2,p { margin-top:0; } h1 { font-size:34px;letter-spacing:-.035em;margin:0;li
 .reference-list>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #30494f;font-size:15px;color:#a8c0bc}
 .reference-list strong{white-space:nowrap;color:#d6eee9;font-variant-numeric:tabular-nums}
 .guide{margin-bottom:18px;scroll-margin-top:20px}
+.reference-credit{margin:-8px 0 16px;color:#c0dcd1;font-size:15px;line-height:1.6}
 .guide-groups{display:grid;grid-template-columns:1.12fr 1fr 1fr;gap:13px}
 .guide-block{background:#142f35;border:1px solid #315257;border-radius:10px;padding:18px;scroll-margin-top:20px}
 .guide-index{display:block;font-size:12px;font-weight:650;color:#7dccbd;letter-spacing:.06em}
@@ -151,6 +162,7 @@ footer p{margin-bottom:7px}footer strong{color:#b6ccca;margin-right:5px}
 @media(max-width:800px){.metrics,.two-col,.guide-groups{grid-template-columns:1fr}.guide-block:last-child{grid-column:auto}.content{padding-top:27px}.intro{align-items:start;flex-direction:column}.status-col{align-items:flex-start}h1{font-size:30px}.big{font-size:67px}}
 @media(max-width:800px){.daily-quote{align-items:flex-start;flex-direction:column;gap:10px}}
 @media(max-width:650px){.rolling-head{grid-template-columns:1fr;gap:15px}.average-stat{border-left:0;border-top:1px solid #30494f;padding:15px 0 0}.rolling-stat .big{font-size:58px}.rolling-chart-heading{align-items:flex-start;flex-direction:column}.multi-trend .panel-header,.guide .panel-header{flex-direction:column}.panel-actions{margin-top:0}.table-wrap{display:none}.mobile-history{display:grid;gap:9px}.guide-description,.fine{font-size:15px}.reference-entry small,.guide-block .reference-list span{font-size:14px}.depth-name small,.depth-data span{font-size:14px}}
+@media(max-width:650px){.chart-scrubber{grid-template-columns:1fr auto;gap:3px 10px}.chart-scrubber input{grid-column:1/-1;grid-row:2}.chart-readout{font-size:15px}}
 @media(max-width:530px){.topbar{padding:0 18px}.top-right>span{display:none}.brand{font-size:17px}.content{padding-left:15px;padding-right:15px}.metric,.panel{padding:21px}.metric-title{align-items:start;flex-direction:column}.big{font-size:60px}.panel-header>span{white-space:normal;text-align:right}.reference-list>div{flex-direction:column;gap:3px}.history .panel-header{flex-direction:column;align-items:flex-start}.download{font-size:14px}.quote-body p{font-size:16px}.daily-quote{padding:14px 16px}.quote-note{display:block;margin:3px 0 0}}
 @media(max-width:650px){.depth-row{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}.depth-bar{grid-column:1/-1}.depth-data b{font-size:21px}.compact-number{font-size:39px}.compact-number span{display:block;margin-left:0;margin-top:2px}.data-export.icon-only{width:36px;height:36px}.chart-tabs button{padding:10px 12px}}
 @media(max-width:370px){.day-card summary{padding:12px;grid-template-columns:1fr auto}.day-date{grid-column:1}.day-total{grid-column:1;text-align:left}.day-chevron{grid-column:2;grid-row:1/3}.day-total strong{font-size:17px}.day-chevron{font-size:12px}.metric-title small{font-size:14px}.split{gap:9px}}
