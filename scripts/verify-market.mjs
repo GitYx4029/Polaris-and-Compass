@@ -18,7 +18,7 @@ for(const row of snapshot.history){
   if(row.star!=null){
     check(positive(row.star)&&row.star<=row.sh,`STAR/Shanghai relationship at ${row.date}`);
     if(row.starSource&&row.starSource!=='上海证券交易所分类成交')
-      check(row.starCount>=600&&row.starActive>=450&&row.starActive<=row.starCount,
+      check(row.starCount>=615&&row.starActive>=570&&row.starActive<=row.starCount,
         `STAR fallback coverage at ${row.date}`);
   }
   if(row.etf!=null){

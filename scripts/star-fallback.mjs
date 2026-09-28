@@ -9,7 +9,9 @@ export function parseEastmoneyStar(body, date, shTotal) {
   const result=typeof body==='string'?JSON.parse(body):body;
   const data=result?.data;
   const rows=Array.isArray(data?.diff)?data.diff:Object.values(data?.diff??{});
-  if(!Number.isInteger(data?.total)||data.total<600||data.total>1000||rows.length!==data.total)
+  // 618 STAR securities were independently reported at the 2026-09-24 close.
+  // Allow three listing changes, but reject a partially returned universe.
+  if(!Number.isInteger(data?.total)||data.total<615||data.total>1000||rows.length!==data.total)
     throw new Error(`Eastmoney STAR coverage ${rows.length}/${data?.total}`);
   let amount=0, active=0;
   const codes=new Set();
@@ -22,7 +24,7 @@ export function parseEastmoneyStar(body, date, shTotal) {
     if(!Number.isFinite(quoted)||quoted<0)throw new Error(`Eastmoney STAR amount ${code}`);
     if(quoted>0){amount+=quoted/1e8;active++}
   }
-  if(active<450||amount<100||amount>=shTotal*.9)throw new Error(`Eastmoney STAR totals ${active}/${codes.size}: ${amount}`);
+  if(active<570||amount<100||amount>=shTotal*.9)throw new Error(`Eastmoney STAR totals ${active}/${codes.size}: ${amount}`);
   return {amount,active,count:codes.size,source:'东方财富科创板逐股报价'};
 }
 
@@ -44,10 +46,15 @@ export function parseTencentStarBatches(batches, date, shTotal){
       const day=`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6,8)}`;
       if(day!==date)continue;
       if(!Number.isFinite(quoted)||quoted<0)throw new Error(`Tencent STAR malformed quote ${code}`);
-      if(quoted>0){amount+=quoted/1e4;active++} // f57 is RMB 10,000.
+      if(quoted>0){
+        const yuan=Number(String(fields[35]??'').split('/')[2]);
+        if(!Number.isFinite(yuan)||Math.abs(yuan/1e4-quoted)>Math.max(1,quoted*.002))
+          throw new Error(`Tencent STAR raw/precise amount mismatch ${code}`);
+        amount+=quoted/1e4;active++; // f57 is RMB 10,000; f35 is RMB.
+      }
     }
   }
-  if(seen.size<600||active<450||amount<100||amount>=shTotal*.9)
+  if(seen.size<615||active<570||amount<100||amount>=shTotal*.9)
     throw new Error(`Tencent STAR coverage ${active}/${seen.size}: ${amount}`);
   return {amount,active,count:seen.size,source:'腾讯财经科创板全代码段报价'};
 }

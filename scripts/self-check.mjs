@@ -42,7 +42,7 @@ const stamp=Date.parse('2026-09-28T07:15:00Z')/1000;
 const emRows=codes.map(code=>({f12:code,f13:1,f6:200_000_000,f124:stamp}));
 assert.equal(parseEastmoneyStar({data:{total:615,diff:emRows}},'2026-09-28',7000).amount,1230);
 const qqQuote=code=>{const fields=Array(62).fill('');fields[1]='测试股票';fields[2]=code;
-  fields[30]='20260928151500';fields[57]='20000';fields[61]='GP-A';
+  fields[30]='20260928151500';fields[35]='1/1/200000000';fields[57]='20000';fields[61]='GP-A';
   return `v_sh${code}="${fields.join('~')}";`;};
 const batch=[[codes,codes.map(qqQuote).join('')+qqQuote('688981')]];
 assert.equal(parseTencentStarBatches(batch,'2026-09-28',7000).amount,1230);
