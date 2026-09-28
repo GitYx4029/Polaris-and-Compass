@@ -24,10 +24,10 @@ a { color:#8dd9c9; text-underline-offset:3px; }
 .quote-export { display:flex;align-items:center;justify-content:center;gap:7px;flex:none;background:#1b4140;color:#e3f4ee;border:1px solid #46766b;border-radius:8px;padding:9px 12px;font-size:14px; }
 .quote-export:hover,.quote-export:focus-visible { border-color:#78d9be; }
 .share-backdrop{position:fixed;inset:0;z-index:20;background:#020e11d9;display:grid;place-items:center;padding:18px}
-.share-dialog{background:#10272d;color:#eaf5ef;border:1px solid #46766b;border-radius:14px;width:min(100%,580px);max-height:min(92dvh,760px);overflow:auto;padding:20px;box-shadow:0 30px 80px #0008}
+.share-dialog{background:#10272d;color:#eaf5ef;border:1px solid #46766b;border-radius:14px;width:min(100%,580px);max-height:92dvh;display:flex;flex-direction:column;overflow:hidden;padding:20px;box-shadow:0 30px 80px #0008}
 .share-heading{display:flex;justify-content:flex-end;margin-bottom:10px}
 .share-heading button{background:transparent;color:#d0e7dc;border:1px solid #4c706b;border-radius:7px;display:grid;place-items:center;width:36px;height:36px}
-.share-card{border:1px solid #60796f;background:linear-gradient(155deg,#173c39,#112b33 78%);padding:29px 27px;border-radius:10px;overflow-wrap:anywhere}
+.share-card{border:1px solid #60796f;background:linear-gradient(155deg,#173c39,#112b33 78%);padding:29px 27px;border-radius:10px;overflow-wrap:anywhere;overflow-y:auto;min-height:0}
 .share-card>span{font-size:14px;color:#a8d6c7}.share-card blockquote{font-family:"KaiTi","STKaiti","Kaiti SC","FangSong",serif;font-weight:400;font-size:28px;line-height:1.7;color:#fff;margin:30px 0 18px}
 .share-author{text-align:right;font-size:17px;color:#d4e8dd}.share-source{border-top:1px solid #476660;padding-top:15px;margin:20px 0 0;font-size:14px;line-height:1.55;color:#c5dcd2}.share-source a{color:#d1f1e4}
 .share-paraphrase{font-size:13px;color:#a6c0b6;margin:7px 0 0}.share-card footer{border-top:1px solid #476660;margin:22px 0 0;padding-top:12px;font-size:13px;color:#afd0c1;text-align:right;max-width:none}
