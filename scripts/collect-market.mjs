@@ -79,7 +79,6 @@ async function star(date){
   }
   return amount;
 }
-const etfUrl='https://push2delay.eastmoney.com/api/qt/clist/get';
 // Exchange code ranges: Shanghai listed ETF secondary-market codes end in 0;
 // Shenzhen assigns both 158000-158999 and 159000-159999 to ETFs. Query the
 // whole ranges, then retain securities that Tencent identifies as ETF.
@@ -130,57 +129,6 @@ async function etfTencent(asOf, etf300){
     throw new Error(`Tencent ETF SSE cross-check differs: ${sh.toFixed(2)} vs 3777.45`);
   return {amount:sh+sz,sh,sz,count:listed,active,source:'腾讯财经全代码段报价'};
 }
-async function eastmoney(url){
-  const hosts=['push2delay.eastmoney.com','88.push2.eastmoney.com','push2.eastmoney.com'];
-  const failures=[];
-  for(const host of hosts){
-    url.hostname=host;
-    try{return JSON.parse(await get(url,{'Referer':'https://quote.eastmoney.com/'}));}
-    catch(error){failures.push(`${host}: ${String(error)}`);}
-  }
-  throw new Error(failures.join(' | '));
-}
-async function etf(asOf){
-  const size=200;
-  const all=[];
-  let expected=0;
-  for(let page=1;page<=40;page++){
-    const url=new URL(etfUrl);
-    for(const [key,value] of Object.entries({pn:page,pz:size,po:1,np:1,
-      ut:'bd1d9ddb04089700cf9c27f6f7426281',fltt:2,invt:2,fid:'f12',
-      fs:'b:MK0021,b:MK0022,b:MK0023,b:MK0024,b:MK0827',
-      fields:'f6,f12,f13,f14,f124,f297'}))url.searchParams.set(key,String(value));
-    const data=(await eastmoney(url)).data;
-    if(!data||!Array.isArray(data.diff)||!Number.isInteger(data.total))throw new Error('ETF list missing total or rows');
-    if(page===1)expected=data.total;
-    if(data.total!==expected)throw new Error('ETF list count changed during pagination');
-    all.push(...data.diff);
-    if(all.length>=expected)break;
-    await pause(160);
-  }
-  if(expected<100||all.length!==expected)throw new Error(`ETF incomplete: ${all.length}/${expected}`);
-  const codes=new Set(), positiveDates=new Set();
-  let yuan=0, active=0;
-  for(const item of all){
-    if(!/^\d{6}$/.test(String(item.f12))||![0,1].includes(Number(item.f13)))
-      throw new Error('ETF security identifier invalid');
-    const code=`${item.f13}.${item.f12}`;
-    if(codes.has(code))throw new Error(`ETF duplicated security ${code}`);
-    codes.add(code);
-    if(item.f6==='-'||item.f6==null||Number(item.f6)===0)continue;
-    const value=positive(item.f6);
-    if(!value)throw new Error(`ETF invalid turnover ${code}`);
-    const date=Number.isFinite(Number(item.f124))
-      ? new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Number(item.f124)*1000))
-      : String(item.f297??'').replace(/^(\d{4})(\d\d)(\d\d)$/,'$1-$2-$3');
-    positiveDates.add(date);
-    if(date!==asOf)throw new Error(`ETF ${code} turnover dated ${date}, expected ${asOf}`);
-    yuan+=value;active++;
-  }
-  if(active<100||yuan<1e10||positiveDates.size!==1)throw new Error(`ETF active symbols ${active} insufficient`);
-  return {amount:yuan/1e8,count:codes.size,active};
-}
-
 let prior={history:[]};
 try{prior=JSON.parse(await fs.readFile(output,'utf8'));}catch{}
 const [sh,sz]=await Promise.all([tencent('sh000001'),tencent('sz399001')]);
@@ -237,15 +185,20 @@ try{
   }
 }catch(e){starStatus=String(e);console.warn(starStatus)}
 try{
-  let value;
-  try{value=await etf(specialDate);value.source='东方财富 ETF 全量行情';}
-  catch(primary){
-    console.info('ETF preferred source unavailable',String(primary));
-    value=await etfTencent(specialDate,etf300?.amounts.get(specialDate));
-  }
+  // One stable universe throughout a trading day. Switching providers changed
+  // the fund count and made cumulative turnover appear to fall intraday.
+  const value=await etfTencent(specialDate,etf300?.amounts.get(specialDate));
+  const previous=prior.history?.find(row=>row.date===specialDate);
+  if(previous?.etfSource===value.source&&previous.etf!=null&&value.amount<previous.etf*.985)
+    throw new Error(`ETF cumulative fell within same source: ${previous.etf.toFixed(2)} to ${value.amount.toFixed(2)}`);
   old.set(specialDate,{...old.get(specialDate),etf:value.amount,etfSh:value.sh,etfSz:value.sz,
     etfCount:value.count,etfActive:value.active,etfSource:value.source,etfCheckedAt:now.toISOString()});
-}catch(e){etfStatus=String(e);console.warn(etfStatus)}
+}catch(e){
+  // Do not carry a stale or differently scoped intraday ETF sum forward.
+  old.set(specialDate,{...old.get(specialDate),etf:undefined,etfSh:undefined,etfSz:undefined,
+    etfCount:undefined,etfActive:undefined,etfSource:undefined,etfCheckedAt:undefined});
+  etfStatus=String(e);console.warn(etfStatus);
+}
 const payload={asOf:latestDate,generatedAt:now.toISOString(),
   quoteAt:[sh.quoteAt,sz.quoteAt].map(stamp=>/^\d{14}$/.test(stamp??'')
     ?`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6,8)} ${stamp.slice(8,10)}:${stamp.slice(10,12)}`:null),

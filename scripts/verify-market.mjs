@@ -38,6 +38,8 @@ for(const item of archive){
       `archive amount/citation at ${item.date}`);
 }
 const latest=snapshot.history.at(-1);
+if(latest.etf!=null)check(latest.etfSource==='腾讯财经全代码段报价',
+  'latest ETF source must use the same fund universe');
 const last20=snapshot.history.slice(-20);
 const total=latest.sh+latest.sz;
 const rolling=last20.reduce((sum,row)=>sum+row.sh+row.sz,0);
