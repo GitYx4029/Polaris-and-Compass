@@ -26,6 +26,7 @@ assert.equal(days[20].avg20,15021);
 assert.equal(days[20].heat,(15000+40)/15021);
 assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T03:59:00Z')),60_000);
 assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T04:00:00Z')),(3*60+15)*60_000);
+assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T07:15:00Z')),(2*60+25)*60_000);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-28 15:00'],Date.parse('2026-09-28T07:14:00Z')),false);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-28 15:00'],Date.parse('2026-09-28T07:15:00Z')),true);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-24 16:14'],Date.parse('2026-09-28T07:15:00Z')),false);
