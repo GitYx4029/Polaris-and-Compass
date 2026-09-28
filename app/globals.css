@@ -23,6 +23,8 @@ a { color:#8dd9c9; text-underline-offset:3px; }
 .quote-actions{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex:none}
 .quote-export { display:flex;align-items:center;justify-content:center;gap:7px;flex:none;background:#1b4140;color:#e3f4ee;border:1px solid #46766b;border-radius:8px;padding:9px 12px;font-size:14px; }
 .quote-export:hover,.quote-export:focus-visible { border-color:#78d9be; }
+.quote-library{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:24px;padding:18px 21px;background:#102a2d;border:1px solid #345755;border-radius:11px;color:#c9e3d9}
+.quote-library strong{display:block;font-size:16px}.quote-library span{display:block;margin-top:4px;color:#9ebdb2;font-size:13px;line-height:1.5}
 .share-backdrop{position:fixed;inset:0;z-index:20;background:#020e11d9;display:grid;place-items:center;padding:18px}
 .share-dialog{background:#10272d;color:#eaf5ef;border:1px solid #46766b;border-radius:14px;width:min(100%,580px);max-height:92dvh;display:flex;flex-direction:column;overflow:hidden;padding:20px;box-shadow:0 30px 80px #0008}
 .share-heading{display:flex;justify-content:flex-end;margin-bottom:10px}
@@ -185,3 +187,33 @@ footer p{margin-bottom:7px}footer strong{color:#b6ccca;margin-right:5px}
 @media(max-width:530px){.topbar{padding:0 18px}.top-right>span{display:none}.brand{font-size:17px}.content{padding-left:15px;padding-right:15px}.metric,.panel{padding:21px}.metric-title{align-items:start;flex-direction:column}.big{font-size:60px}.panel-header>span{white-space:normal;text-align:right}.reference-list>div{flex-direction:column;gap:3px}.history .panel-header{flex-direction:column;align-items:flex-start}.download{font-size:14px}.quote-body p{font-size:20px}.daily-quote{padding:14px 16px}.quote-actions{justify-content:flex-start}.share-dialog{padding:15px}.share-card{padding:22px 18px}.share-card blockquote{font-size:24px}.quote-note{display:block;margin:3px 0 0}}
 @media(max-width:650px){.depth-row{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}.depth-bar{grid-column:1/-1}.depth-data b{font-size:21px}.compact-number{font-size:39px}.compact-number span{display:block;margin-left:0;margin-top:2px}.data-export.icon-only{width:36px;height:36px}.chart-tabs button{padding:10px 12px}}
 @media(max-width:370px){.day-card summary{padding:12px;grid-template-columns:1fr auto}.day-date{grid-column:1}.day-total{grid-column:1;text-align:left}.day-chevron{grid-column:2;grid-row:1/3}.day-total strong{font-size:17px}.day-chevron{font-size:12px}.metric-title small{font-size:14px}.split{gap:9px}}
+@media(max-width:650px){
+  .quote-library{align-items:flex-start;flex-direction:column}.quote-library .quote-export{width:100%}
+  .share-backdrop{padding:6px}
+  .share-dialog{width:100%;max-height:calc(100dvh - 12px);padding:8px;gap:0}
+  .share-heading{margin-bottom:3px}.share-heading button{width:27px;height:27px}
+  .share-card{overflow:visible;padding:10px 12px;flex:none}
+  .share-card>span{font-size:12px}
+  .share-card blockquote{font-size:clamp(17px,4.5vw,20px);line-height:1.3;margin:7px 0 5px}
+  .share-author{font-size:13px;margin:0}
+  .share-source{padding-top:5px;margin:6px 0 0;font-size:12px;line-height:1.28}
+  .share-paraphrase{font-size:11px;margin:3px 0 0}
+  .share-market{margin-top:7px;padding-top:7px}
+  .share-market h3{font-size:12px;margin:0 0 5px}
+  .share-market-grid{gap:5px 10px}
+  .share-market-grid span,.share-market-grid small{font-size:11px;line-height:1.15}
+  .share-market-grid strong{font-size:16px;margin-top:1px;line-height:1.2}
+  .share-market-grid small{font-size:10px;margin-top:1px}
+  .share-card footer{margin:7px 0 0;padding-top:5px;font-size:11px}
+  .share-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:5px}
+  .share-actions button{justify-content:center;gap:3px;padding:6px 2px;font-size:11px;white-space:nowrap}
+  .share-actions button svg{width:12px;height:12px;flex:none}
+  .share-feedback{min-height:0;font-size:11px;margin:2px 0 0}
+  .share-feedback:empty{display:none}
+}
+@media(max-width:360px) and (max-height:620px){
+  .share-dialog{padding:5px}.share-card{padding:7px 9px}
+  .share-card blockquote{font-size:16px;line-height:1.2;margin:4px 0}
+  .share-market-grid{gap:3px 8px}.share-market-grid strong{font-size:14px}
+  .share-source{font-size:11px}.share-market h3{font-size:11px}
+}
