@@ -7,7 +7,7 @@ import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { isCloseConfirmed, nextScheduledRefresh } from "@/lib/refreshSchedule";
 import { saveQuotePng, type ShareDatum } from "@/lib/quoteImage";
 
-type Detail = { date:string;sh:number;sz:number;star?:number;starCheckedAt?:string;etf?:number;etfSh?:number;etfSz?:number;etfCount?:number;etfActive?:number;etfSource?:string;etfCheckedAt?:string;etfReferenceUrl?:string;etf510300?:number|null };
+type Detail = { date:string;sh:number;sz:number;star?:number;starCheckedAt?:string;starSource?:string;starCount?:number;starActive?:number;etf?:number;etfSh?:number;etfSz?:number;etfCount?:number;etfActive?:number;etfSource?:string;etfCheckedAt?:string;etfReferenceUrl?:string;etf510300?:number|null };
 type Snapshot = { asOf:string;generatedAt:string;history:Detail[];quoteAt?:[string|null,string|null];status?:{star?:string|null;etf?:string|null} };
 type Result = { days: Day[]; quoteAt: (string|null)[]; source: string; checkedAt: string;
   snapshot:Snapshot|null; etf300:Map<string,number>|null };
@@ -125,13 +125,13 @@ function provisionalDate(result:Result):string|null {
 function downloadHistory(result:Result,onlyDate?:string) {
   const detail=new Map(result.snapshot?.history.map(item=>[item.date,item])??[]);
   const provisional=provisionalDate(result);
-  const header="交易日,上证市场成交额(亿元),深证市场成交额(亿元),沪深合计成交额(亿元),科创板成交额(亿元),沪深ETF成交额(亿元),沪市ETF成交额(亿元),深市ETF成交额(亿元),510300成交额(亿元),近20交易日累计成交额(亿元),近20交易日平均成交额(亿元),资金温度(倍),科创核对时间,ETF核对时间,ETF来源,ETF核验链接,沪深行情来源,行情核对时间,数据阶段";
+  const header="交易日,上证市场成交额(亿元),深证市场成交额(亿元),沪深合计成交额(亿元),科创板成交额(亿元),沪深ETF成交额(亿元),沪市ETF成交额(亿元),深市ETF成交额(亿元),510300成交额(亿元),近20交易日累计成交额(亿元),近20交易日平均成交额(亿元),资金温度(倍),科创核对时间,科创来源,ETF核对时间,ETF来源,ETF核验链接,沪深行情来源,行情核对时间,数据阶段";
   const lines=result.days.filter(day=>!onlyDate||day.date===onlyDate).map(d=>{
     const extra=detail.get(d.date),etf300=result.etf300?.get(d.date)??extra?.etf510300;
     return [d.date,d.sh.toFixed(4),d.sz.toFixed(4),d.total.toFixed(4),
       extra?.star?.toFixed(4)??"",extra?.etf?.toFixed(4)??"",extra?.etfSh?.toFixed(4)??"",extra?.etfSz?.toFixed(4)??"",etf300?.toFixed(4)??"",
       d.date===provisional?"":d.roll20?.toFixed(4)??"",d.date===provisional?"":d.avg20?.toFixed(4)??"",d.date===provisional?"":d.heat?.toFixed(6)??"",
-      extra?.starCheckedAt??"",extra?.etfCheckedAt??"",extra?.etfSource??"",extra?.etfReferenceUrl??"",result.source,result.checkedAt,d.date===provisional?"盘中暂计":"收盘/历史"].join(",");
+      extra?.starCheckedAt??"",extra?.starSource??"",extra?.etfCheckedAt??"",extra?.etfSource??"",extra?.etfReferenceUrl??"",result.source,result.checkedAt,d.date===provisional?"盘中暂计":"收盘/历史"].join(",");
   });
   const file=new Blob(["\ufeff",header,"\r\n",lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(file);
@@ -443,7 +443,7 @@ export default function Home() {
           <div className="depth-bar"><span style={{width:`${latest&&item.value?Math.max(1,item.value/latest.total*100):0}%`}}/></div></div>)}</div>
         {latest&&latestDetail?.star===undefined&&<p className="fine">科创板：上交所尚未返回该交易日可核验的分类成交额，已安排收盘后补采；不会用科创综指等不同口径数据代填。</p>}
         {latestDetail?.etfSh!==undefined&&latestDetail?.etfSz!==undefined&&<p className="fine etf-breakdown">ETF 分市场：沪市 {yi(latestDetail.etfSh)} 亿元 <DataDownload result={result} metric="etfSh" iconOnly/>＋深市 {yi(latestDetail.etfSz)} 亿元 <DataDownload result={result} metric="etfSz" iconOnly/>；核对于 {latestDetail.etfCheckedAt?new Date(latestDetail.etfCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"未知"}（北京时间）。</p>}
-        <p className="fine">细分项与上层市场之间存在包含关系，不应直接相加。ETF 为沪深场内 ETF 成交额，不等同全部基金；510300 已计入 ETF。科创板最近核对：{latestDetail?.starCheckedAt?new Date(latestDetail.starCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"待核实"}。</p>
+        <p className="fine">细分项与上层市场之间存在包含关系，不应直接相加。ETF 为沪深场内 ETF 成交额，不等同全部基金；510300 已计入 ETF。科创板最近核对：{latestDetail?.starCheckedAt?new Date(latestDetail.starCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"待核实"}；来源：{latestDetail?.starSource??"待核实"}。</p>
       </section>
       <MarketChart days={days} result={result} provisional={provisional}/>
       <section className="panel guide" id="reference"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST / 解读参考</p><h2>指标、阈值与观察含义</h2></div><span>按对应数据口径分区</span></div>

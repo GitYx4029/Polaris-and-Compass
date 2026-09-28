@@ -1,8 +1,9 @@
-// Run on GitHub Actions at 12:10 and 15:25 China time and at each deployment.
+// Run only from the scheduled market-collection workflow or its manual trigger.
 // Values are RMB 100 million (亿元). A failed source never becomes a zero.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {alignedQuoteDates,unchangedClosedSession} from './market-session.mjs';
+import {starFallback} from './star-fallback.mjs';
 
 const output = path.resolve('public/data/market-snapshot.json');
 const now = new Date();
@@ -173,15 +174,22 @@ const specialDate=latestDate;
 let starStatus=null,etfStatus=null;
 try{
   const amount=await star(specialDate);
-  old.set(specialDate,{...old.get(specialDate),star:amount,starCheckedAt:now.toISOString()});
-}catch(e){starStatus=String(e);console.warn(starStatus)}
+  old.set(specialDate,{...old.get(specialDate),star:amount,starSource:'上海证券交易所分类成交',starCheckedAt:now.toISOString()});
+}catch(officialError){
+  console.warn(`Official STAR breakdown unavailable: ${officialError}`);
+  try{
+    const fallback=await starFallback(specialDate,sh.amounts.get(specialDate),get);
+    old.set(specialDate,{...old.get(specialDate),star:fallback.amount,starSource:fallback.source,
+      starCount:fallback.count,starActive:fallback.active,starCheckedAt:now.toISOString()});
+  }catch(fallbackError){starStatus=`${officialError}; ${fallbackError}`;console.warn(starStatus)}
+}
 // A same-day SSE result can be unpublished at 15:25. Recover missing previous
 // sessions independently, even when today's official breakdown is still empty.
 const backfill=dates.slice(-20,-1).filter(date=>!old.get(date)?.star).slice(-3);
 const recovered=await Promise.allSettled(backfill.map(async date=>({date,amount:await star(date)})));
 for(const value of recovered)if(value.status==='fulfilled'){
   const {date,amount}=value.value;
-  old.set(date,{...old.get(date),star:amount,starCheckedAt:now.toISOString()});
+  old.set(date,{...old.get(date),star:amount,starSource:'上海证券交易所分类成交',starCheckedAt:now.toISOString()});
 }
 try{
   // One stable universe throughout a trading day. Switching providers changed

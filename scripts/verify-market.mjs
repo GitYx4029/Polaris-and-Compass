@@ -15,7 +15,12 @@ let previous='';
 for(const row of snapshot.history){
   check(date.test(row.date??'')&&row.date>previous&&row.date<=snapshot.asOf,`date order at ${row.date}`);
   check(positive(row.sh)&&positive(row.sz)&&row.sh<1e6&&row.sz<1e6,`market values at ${row.date}`);
-  if(row.star!=null)check(positive(row.star)&&row.star<=row.sh,`STAR/Shanghai relationship at ${row.date}`);
+  if(row.star!=null){
+    check(positive(row.star)&&row.star<=row.sh,`STAR/Shanghai relationship at ${row.date}`);
+    if(row.starSource&&row.starSource!=='上海证券交易所分类成交')
+      check(row.starCount>=600&&row.starActive>=450&&row.starActive<=row.starCount,
+        `STAR fallback coverage at ${row.date}`);
+  }
   if(row.etf!=null){
     check(positive(row.etf),`ETF amount at ${row.date}`);
     if(row.etfSh!=null||row.etfSz!=null)

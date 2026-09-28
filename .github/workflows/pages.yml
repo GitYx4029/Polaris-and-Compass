@@ -4,15 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    # UTC 04:10 / 07:25 / 09:10 = China 12:10 / 15:25 / 17:10, weekdays.
-    - cron: '10 4 * * 1-5'
-    - cron: '25 7 * * 1-5'
-    # Retry the official STAR breakdown after the exchange publishes daily data.
-    - cron: '10 9 * * 1-5'
+  workflow_call:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -25,25 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main # The collector's GITHUB_TOKEN commit does not fire push workflows.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - name: Check parser, rolling window and refresh schedule
         run: node --experimental-strip-types scripts/self-check.mjs
-      - name: Collect and cross-check market data
-        run: node scripts/collect-market.mjs
-      - name: Verify snapshot consistency
+      - name: Verify committed snapshot consistency
         run: node scripts/verify-market.mjs
-      - name: Preserve verified history in the repository
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/data/market-snapshot.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'Update verified market snapshot'
-            git push
-          fi
       - run: npm run build
       - uses: actions/configure-pages@v5
         with:

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {parseTencent,composeDays} from '../lib/market.ts';
 import {isCloseConfirmed,nextScheduledRefresh} from '../lib/refreshSchedule.ts';
 import {alignedQuoteDates,unchangedClosedSession} from './market-session.mjs';
+import {parseEastmoneyStar,parseTencentStarBatches} from './star-fallback.mjs';
 
 const bars=Array.from({length:21},(_,i)=>{
   const date=new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10);
@@ -36,4 +37,15 @@ assert.equal(unchangedClosedSession('2026-09-24','2026-09-28',prior,7836.13,8698
 assert.equal(unchangedClosedSession('2026-09-28','2026-09-28',prior,1,1),false);
 assert.equal(alignedQuoteDates('2026-09-28','20260928113000','20260928113000'),true);
 assert.equal(alignedQuoteDates('2026-09-28','20260928113000','20260924161400'),false);
+const codes=Array.from({length:615},(_,i)=>`688${String(i).padStart(3,'0')}`);
+const stamp=Date.parse('2026-09-28T07:15:00Z')/1000;
+const emRows=codes.map(code=>({f12:code,f13:1,f6:200_000_000,f124:stamp}));
+assert.equal(parseEastmoneyStar({data:{total:615,diff:emRows}},'2026-09-28',7000).amount,1230);
+const qqQuote=code=>{const fields=Array(62).fill('');fields[1]='测试股票';fields[2]=code;
+  fields[30]='20260928151500';fields[57]='20000';fields[61]='GP-A';
+  return `v_sh${code}="${fields.join('~')}";`;};
+const batch=[[codes,codes.map(qqQuote).join('')+qqQuote('688981')]];
+assert.equal(parseTencentStarBatches(batch,'2026-09-28',7000).amount,1230);
+assert.throws(()=>parseTencentStarBatches(batch,'2026-09-24',7000),/coverage/);
+assert.throws(()=>parseEastmoneyStar({data:{total:615,diff:emRows.slice(1)}},'2026-09-28',7000),/coverage/);
 console.log('self-check: Tencent amount/date, mismatched close, rolling20, Beijing schedule, stale-session skip and quote alignment');

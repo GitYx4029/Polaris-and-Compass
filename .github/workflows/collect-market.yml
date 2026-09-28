@@ -1,0 +1,57 @@
+name: Collect verified market snapshot
+
+on:
+  workflow_dispatch:
+  schedule:
+    # UTC 04:10 / 07:25 / 09:10 = China 12:10 / 15:25 / 17:10, weekdays.
+    - cron: '10 4 * * 1-5'
+    - cron: '25 7 * * 1-5'
+    - cron: '10 9 * * 1-5'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: market-collection
+      cancel-in-progress: false
+    outputs:
+      changed: ${{ steps.save.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check parsers and schedule
+        run: node --experimental-strip-types scripts/self-check.mjs
+      - name: Collect market data
+        run: node scripts/collect-market.mjs
+      - name: Verify snapshot
+        run: node scripts/verify-market.mjs
+      - name: Save verified history
+        id: save
+        run: |
+          git add public/data/market-snapshot.json
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Update verified market snapshot'
+            git push
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+  publish:
+    needs: collect
+    if: needs.collect.outputs.changed == 'true'
+    uses: ./.github/workflows/pages.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
