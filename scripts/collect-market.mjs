@@ -2,10 +2,12 @@
 // Values are RMB 100 million (亿元). A failed source never becomes a zero.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {alignedQuoteDates,unchangedClosedSession} from './market-session.mjs';
 
 const output = path.resolve('public/data/market-snapshot.json');
 const now = new Date();
 const beijing = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Shanghai', year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+const beijingClock=new Date(now.getTime()+8*3600_000).toISOString().slice(11,16);
 const headers = {'User-Agent':'Mozilla/5.0 (compatible; Polaris-and-Compass/1.0)', 'Accept':'*/*'};
 async function get(url, extra={}) {
   const response = await fetch(url,{headers:{...headers,...extra},signal:AbortSignal.timeout(16000)});
@@ -34,9 +36,11 @@ async function tencent(symbol) {
   if(/^\d{14}$/.test(stamp??'')){
     const date=`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6,8)}`;
     const yuan=positive(String(quote[35]??'').split('/')[2]);
-    if(yuan && yuan>(symbol==='sh510300'?1e7:1e10)){
+    if(yuan && yuan>(symbol==='sh510300'?1e7:1e10) && yuan<1e14){
       const amount=yuan/1e8, fromBar=amounts.get(date);
-      if(fromBar && stamp.slice(8,12)>='1600' && Math.abs(amount/fromBar-1)>.005)
+      const closeCheck=stamp.slice(8,12)>='1600'||
+        (date===beijing&&beijingClock>='15:25'&&stamp.slice(8,12)>='1500');
+      if(fromBar && closeCheck && Math.abs(amount/fromBar-1)>.005)
         throw new Error(`${symbol}: quote/bar mismatch`);
       amounts.set(date,amount);
     }
@@ -179,12 +183,22 @@ async function etf(asOf){
 
 let prior={history:[]};
 try{prior=JSON.parse(await fs.readFile(output,'utf8'));}catch{}
-const [sh,sz,etf300Result]=await Promise.all([tencent('sh000001'),tencent('sz399001'),
-  tencent('sh510300').then(value=>({value})).catch(error=>({error:String(error)}))]);
-const etf300=etf300Result.value;
+const [sh,sz]=await Promise.all([tencent('sh000001'),tencent('sz399001')]);
 const dates=[...sh.amounts.keys()].filter(d=>sz.amounts.has(d)).sort();
 const latest=dates.at(-1);
 if(!latest||latest>beijing)throw new Error(`unexpected latest date ${latest}`);
+// A new publish or a holiday should not spend another full ETF scan on the
+// same, already verified closing session or make old data appear newly checked.
+if(unchangedClosedSession(latest,beijing,prior,sh.amounts.get(latest),sz.amounts.get(latest))){
+  console.log(JSON.stringify({asOf:latest,unchanged:true,reason:'no new trading session'}));
+  process.exit(0);
+}
+// On a trading day, the two independent market quotes must cover the same
+// session. Missing or lagged quotes leave the last verified snapshot intact.
+if(latest===beijing&&!alignedQuoteDates(latest,sh.quoteAt,sz.quoteAt))
+  throw new Error(`market quote dates disagree with ${latest}: ${sh.quoteAt}, ${sz.quoteAt}`);
+const etf300Result=await tencent('sh510300').then(value=>({value})).catch(error=>({error:String(error)}));
+const etf300=etf300Result.value;
 const history=dates.map(date=>({date,sh:sh.amounts.get(date),sz:sz.amounts.get(date),
   etf510300:etf300?.amounts.get(date)??null}));
 const old=new Map((prior.history??[]).map(x=>[x.date,x]));

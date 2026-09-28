@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, RefreshCw } from "lucide-react";
+import { Copy, Download, RefreshCw, Share2, X } from "lucide-react";
 import { composeDays, parseTencent, type Day, type MarketRow } from "@/lib/market";
 import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { nextScheduledRefresh } from "@/lib/refreshSchedule";
@@ -142,6 +142,10 @@ function downloadQuotes() {
   const anchor=document.createElement("a");anchor.href=url;anchor.download="投资观点摘录库.csv";
   document.body.appendChild(anchor);anchor.click();anchor.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function quoteShareText(quote:typeof investorQuotes[number]) {
+  return `“${quote.text}”\n——${quote.author}\n出处：${quote.source} · ${quote.locator}\n${quote.url}\n据原文意译或归纳\npowered by C.Luo w/ChatGPT`;
 }
 
 function Chart({data}:{data:Day[]}) {
@@ -295,6 +299,8 @@ export default function Home() {
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(true);
   const [dailyQuoteIndex,setDailyQuoteIndex]=useState(0);
+  const [shareOpen,setShareOpen]=useState(false);
+  const [shareFeedback,setShareFeedback]=useState("");
   const requestId=useRef(0);
   const inFlight=useRef(false);
   const refresh=useCallback(async()=>{
@@ -329,6 +335,12 @@ export default function Home() {
     update();const clock=setInterval(update,60_000);
     return()=>clearInterval(clock);
   },[]);
+  useEffect(()=>{
+    if(!shareOpen)return;
+    const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")setShareOpen(false)};
+    document.addEventListener("keydown",onKey);
+    return()=>document.removeEventListener("keydown",onKey);
+  },[shareOpen]);
   const days=result?.days??[],latest=days.at(-1),prev=days.at(-2);
   const latestDetail=result?.snapshot?.history.find(item=>item.date===latest?.date);
   const etf300=latest?(result?.etf300?.get(latest.date)??latestDetail?.etf510300):undefined;
@@ -344,10 +356,20 @@ export default function Home() {
   const intraday=!!(currentDay&&!closeConfirmed&&!waitingClose);
   const phase=waitingClose?"收盘数据待更新":waitingNoon?"午间数据待更新":intraday&&clock>="12:00"&&clock<"13:00"?"午间累计":intraday?"盘中累计":"收盘";
   const dailyQuote=investorQuotes[dailyQuoteIndex];
+  const copyQuote=async()=>{
+    try{await navigator.clipboard.writeText(quoteShareText(dailyQuote));setShareFeedback("观点、出处和来源链接已复制");}
+    catch{setShareFeedback("复制失败，请选择卡片文字手动复制");}
+  };
+  const shareQuote=async()=>{
+    if(!navigator.share){await copyQuote();return;}
+    try{await navigator.share({title:`${dailyQuote.author} · 投资观点`,text:quoteShareText(dailyQuote)});setShareFeedback("已打开系统分享");}
+    catch(error){if((error as Error)?.name!=="AbortError")setShareFeedback("分享未完成，可使用复制文案");}
+  };
   return <main className="shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark"/>A股成交观察</div><div className="top-right"><span>沪深两市 · {waitingClose?"收盘核对中":intraday?"盘中更新":"最近交易日"}</span><button onClick={refresh} disabled={loading}><RefreshCw size={17} className={loading?"spinning":""}/>刷新</button></div></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark"/>大A观测助手</div><div className="top-right"><span>沪深两市 · {waitingClose?"收盘核对中":intraday?"盘中更新":"最近交易日"}</span><button onClick={refresh} disabled={loading}><RefreshCw size={17} className={loading?"spinning":""}/>刷新</button></div></header>
     <div className="content">
-      <section className="daily-quote" aria-label="每日投资观点"><div className="quote-body"><span className="quote-label">今日投资观点 · {dailyQuote.author}</span><p>{dailyQuote.text}</p><a href={dailyQuote.url} target="_blank" rel="noreferrer">{dailyQuote.source} · {dailyQuote.locator}</a><span className="quote-note">据原文意译或归纳</span></div><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>导出观点库 CSV（{investorQuotes.length} 条）</button></section>
+      <section className="daily-quote" aria-label="每日投资观点"><div className="quote-body"><span className="quote-label">今日投资观点 · {dailyQuote.author}</span><p>“{dailyQuote.text}”</p><a href={dailyQuote.url} target="_blank" rel="noreferrer">出处：{dailyQuote.source} · {dailyQuote.locator}</a><span className="quote-note">据原文意译或归纳</span></div><div className="quote-actions"><button className="quote-export" onClick={()=>{setShareFeedback("");setShareOpen(true)}}><Share2 size={15}/>分享观点</button><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>导出观点库 CSV（{investorQuotes.length} 条）</button></div></section>
+      {shareOpen&&<div className="share-backdrop" onClick={event=>{if(event.target===event.currentTarget)setShareOpen(false)}}><section className="share-dialog" role="dialog" aria-modal="true" aria-labelledby="share-heading"><div className="share-heading"><h2 id="share-heading">分享今日投资观点</h2><button type="button" onClick={()=>setShareOpen(false)} aria-label="关闭分享卡片" autoFocus><X size={19}/></button></div><div className="share-card"><span>大A观测助手 · 今日投资观点</span><blockquote>“{dailyQuote.text}”</blockquote><p className="share-author">—— {dailyQuote.author}</p><p className="share-source">出处：<a href={dailyQuote.url} target="_blank" rel="noreferrer">{dailyQuote.source} · {dailyQuote.locator}</a></p><p className="share-paraphrase">据原文意译或归纳</p><footer>powered by C.Luo w/ChatGPT</footer></div><div className="share-actions"><button type="button" onClick={copyQuote}><Copy size={17}/>复制分享文案</button><button type="button" onClick={shareQuote}><Share2 size={17}/>系统分享</button></div><p className="share-feedback" role="status">{shareFeedback}</p></section></div>}
       <div className="intro"><div><p className="eyebrow">MARKET ACTIVITY / DAILY</p><h1>成交活跃度</h1></div><div className="status-col"><div className="freshness"><span className={`dot ${latest?"good":""}`}/>{loading&&!latest?"正在读取行情数据":latest?`数据日期 ${latest.date} · ${phase}`:"暂无有效数据"}</div><div className="schedule-hint">北京时间 12:00 / 15:15 自动刷新</div></div></div>
       {error&&<div className="notice error" role="alert">{error} <button onClick={refresh}>重试</button></div>}
       {latest&&prev&&tier(prev.total/10000)!==currentTier&&<div className="notice" role="status">最近交易日成交额进入 <strong>{tiers[currentTier!].text} 万亿</strong> 区间，<a href="#guide-daily">查看指南针解读参考</a>。</div>}

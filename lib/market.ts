@@ -23,7 +23,10 @@ export function parseTencent(payload: unknown, symbol: "sh000001" | "sz399001" |
     if (yuan !== null && yuan > (symbol === "sh510300" ? 1e7 : 1e10) && yuan < 1e14) {
       const quoteYi = yuan / 1e8;
       const dailyYi = amounts.get(date);
-      if (dailyYi !== undefined && quoteAt.slice(11) >= "16:00" && Math.abs(quoteYi/dailyYi-1) > 0.005)
+      const beijingNow=new Date(Date.now()+8*3600_000).toISOString();
+      const closed=quoteAt.slice(11)>="16:00"||
+        (date===beijingNow.slice(0,10)&&beijingNow.slice(11,16)>="15:25"&&quoteAt.slice(11)>="15:00");
+      if (dailyYi !== undefined && closed && Math.abs(quoteYi/dailyYi-1) > 0.005)
         throw new Error(`${symbol} 日线与收盘行情不一致`);
       if (dailyYi === undefined || date >= [...amounts.keys()].at(-1)!) amounts.set(date,quoteYi);
     }

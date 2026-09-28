@@ -27,8 +27,12 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - name: Check parser, rolling window and refresh schedule
+        run: node --experimental-strip-types scripts/self-check.mjs
       - name: Collect and cross-check market data
         run: node scripts/collect-market.mjs
+      - name: Verify snapshot consistency
+        run: node scripts/verify-market.mjs
       - name: Preserve verified history in the repository
         run: |
           git config user.name 'github-actions[bot]'

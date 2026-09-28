@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "A股成交观察",
+  title: "大A观测助手",
   description: "沪深A股单日成交额与20个交易日滚动累计。",
+  other: {
+    "codex-preview": "development",
+  },
   icons: {
-    icon: "/Polaris-and-Compass/favicon.svg",
-    shortcut: "/Polaris-and-Compass/favicon.svg",
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
   },
 };
 
