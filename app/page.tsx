@@ -316,6 +316,7 @@ export default function Home() {
   const [dailyQuoteIndex,setDailyQuoteIndex]=useState(0);
   const [shareOpen,setShareOpen]=useState(false);
   const [shareFeedback,setShareFeedback]=useState("");
+  const shareDialog=useRef<HTMLElement>(null);
   const requestId=useRef(0);
   const inFlight=useRef(false);
   const refresh=useCallback(async()=>{
@@ -356,6 +357,22 @@ export default function Home() {
     document.addEventListener("keydown",onKey);
     return()=>document.removeEventListener("keydown",onKey);
   },[shareOpen]);
+  useEffect(()=>{
+    if(!shareOpen)return;
+    const fit=()=>{
+      const dialog=shareDialog.current;
+      if(!dialog)return;
+      dialog.style.zoom="1";
+      if(window.innerWidth>650)return;
+      // Fit the card and controls inside the visible phone viewport.
+      const available=(window.visualViewport?.height??window.innerHeight)-12;
+      dialog.style.zoom=String(Math.min(1,available/dialog.scrollHeight));
+    };
+    const frame=requestAnimationFrame(fit);
+    window.addEventListener("resize",fit);
+    window.visualViewport?.addEventListener("resize",fit);
+    return()=>{cancelAnimationFrame(frame);window.removeEventListener("resize",fit);window.visualViewport?.removeEventListener("resize",fit)};
+  },[shareOpen,shareFeedback,dailyQuoteIndex,result]);
   const days=result?.days??[],latest=days.at(-1),prev=days.at(-2);
   const latestDetail=result?.snapshot?.history.find(item=>item.date===latest?.date);
   const etf300=latest?(result?.etf300?.get(latest.date)??latestDetail?.etf510300):undefined;
@@ -402,7 +419,7 @@ export default function Home() {
     <header className="topbar"><div className="brand"><span className="brand-mark"/>大A观测助手</div><div className="top-right"><span>沪深两市 · {waitingClose?"收盘核对中":intraday?"盘中更新":"最近交易日"}</span><button onClick={refresh} disabled={loading}><RefreshCw size={17} className={loading?"spinning":""}/>刷新</button></div></header>
     <div className="content">
       <section className="daily-quote" aria-label="每日投资观点"><div className="quote-body"><span className="quote-label">今日投资观点 · {dailyQuote.author}</span><p>“{dailyQuote.text}”</p><a href={dailyQuote.url} target="_blank" rel="noreferrer">出处：{dailyQuote.source} · {dailyQuote.locator}</a><span className="quote-note">据原文意译或归纳</span></div><div className="quote-actions"><button className="quote-export" onClick={()=>{setShareFeedback("");setShareOpen(true)}}><Share2 size={15}/>分享观点</button></div></section>
-      {shareOpen&&<div className="share-backdrop" onClick={event=>{if(event.target===event.currentTarget)setShareOpen(false)}}><section className="share-dialog" role="dialog" aria-modal="true" aria-label="投资观点分享卡片"><div className="share-heading"><button type="button" onClick={()=>setShareOpen(false)} aria-label="关闭分享卡片" autoFocus><X size={19}/></button></div><div className="share-card"><span>大A观测助手 · 今日投资观点</span><blockquote>“{dailyQuote.text}”</blockquote><p className="share-author">—— {dailyQuote.author}</p><p className="share-source">出处：<a href={dailyQuote.url} target="_blank" rel="noreferrer">{dailyQuote.source} · {dailyQuote.locator}</a></p><p className="share-paraphrase">据原文意译或归纳</p><div className="share-market"><h3>市场数据 · {latest?.date??today} · {latest?phase:"等待数据"}</h3><div className="share-market-grid">{shareData.map(item=><div key={item.label}><span>{item.label}</span><strong>{item.value}</strong>{item.note&&<small>{item.note}</small>}</div>)}</div></div><footer>powered by C.Luo w/ChatGPT</footer></div><div className="share-actions"><button type="button" onClick={saveQuoteImage}><Download size={17}/>保存图片 PNG</button><button type="button" onClick={copyQuote}><Copy size={17}/>复制分享文案</button><button type="button" onClick={shareQuote}><Share2 size={17}/>系统分享</button></div><p className="share-feedback" role="status">{shareFeedback}</p></section></div>}
+      {shareOpen&&<div className="share-backdrop" onClick={event=>{if(event.target===event.currentTarget)setShareOpen(false)}}><section ref={shareDialog} className="share-dialog" role="dialog" aria-modal="true" aria-label="投资观点分享卡片"><div className="share-heading"><button type="button" onClick={()=>setShareOpen(false)} aria-label="关闭分享卡片" autoFocus><X size={19}/></button></div><div className="share-card"><span>大A观测助手 · 今日投资观点</span><blockquote>“{dailyQuote.text}”</blockquote><p className="share-author">—— {dailyQuote.author}</p><p className="share-source">出处：<a href={dailyQuote.url} target="_blank" rel="noreferrer">{dailyQuote.source} · {dailyQuote.locator}</a></p><p className="share-paraphrase">据原文意译或归纳</p><div className="share-market"><h3>市场数据 · {latest?.date??today} · {latest?phase:"等待数据"}</h3><div className="share-market-grid">{shareData.map(item=><div key={item.label}><span>{item.label}</span><strong>{item.value}</strong>{item.note&&<small>{item.note}</small>}</div>)}</div></div><footer>powered by C.Luo w/ChatGPT</footer></div><div className="share-actions"><button type="button" onClick={saveQuoteImage}><Download size={17}/>保存图片 PNG</button><button type="button" onClick={copyQuote}><Copy size={17}/>复制分享文案</button><button type="button" onClick={shareQuote}><Share2 size={17}/>系统分享</button></div><p className="share-feedback" role="status">{shareFeedback}</p></section></div>}
       <div className="intro"><div><p className="eyebrow">MARKET ACTIVITY / DAILY</p><h1>成交活跃度</h1></div><div className="status-col"><div className="freshness"><span className={`dot ${latest?"good":""}`}/>{loading&&!latest?"正在读取行情数据":latest?`数据日期 ${latest.date} · ${phase}`:"暂无有效数据"}</div><div className="schedule-hint">北京时间 12:00 / 15:15 自动刷新</div></div></div>
       {error&&<div className="notice error" role="alert">{error} <button onClick={refresh}>重试</button></div>}
       {!provisional&&latest&&prev&&tier(prev.total/10000)!==currentTier&&<div className="notice" role="status">最近交易日成交额进入 <strong>{tiers[currentTier!].text} 万亿</strong> 区间，<a href="#guide-daily">查看指南针解读参考</a>。</div>}

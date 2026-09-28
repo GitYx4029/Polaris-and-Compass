@@ -190,7 +190,7 @@ footer p{margin-bottom:7px}footer strong{color:#b6ccca;margin-right:5px}
 @media(max-width:650px){
   .quote-library{align-items:flex-start;flex-direction:column}.quote-library .quote-export{width:100%}
   .share-backdrop{padding:6px}
-  .share-dialog{width:100%;max-height:calc(100dvh - 12px);padding:8px;gap:0}
+  .share-dialog{width:100%;max-height:none;overflow:visible;padding:8px;gap:0}
   .share-heading{margin-bottom:3px}.share-heading button{width:27px;height:27px}
   .share-card{overflow:visible;padding:10px 12px;flex:none}
   .share-card>span{font-size:12px}
