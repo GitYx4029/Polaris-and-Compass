@@ -35,6 +35,7 @@ a { color:#8dd9c9; text-underline-offset:3px; }
 .share-paraphrase{font-size:13px;color:#a6c0b6;margin:7px 0 0}.share-card footer{border-top:1px solid #476660;margin:22px 0 0;padding-top:12px;font-size:13px;color:#afd0c1;text-align:right;max-width:none}
 .share-market{border-top:1px solid #476660;margin-top:18px;padding-top:17px}.share-market h3{font-size:15px;font-weight:600;color:#a8d6c7;margin:0 0 12px}.share-market-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}.share-market-grid>div{min-width:0}.share-market-grid span,.share-market-grid small{display:block;color:#a9c6bb;font-size:13px}.share-market-grid strong{display:block;color:#f0fbf5;font-size:18px;font-variant-numeric:tabular-nums;margin-top:3px}.share-market-grid small{font-size:12px;margin-top:2px}
 .share-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.share-actions button{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;background:#235047;color:#f0fcf5;border:1px solid #699f8b;border-radius:8px;font-size:14px}.share-actions button:hover,.share-actions button:focus-visible{background:#326759}
+.share-market-grid span{color:#69f0d9;font-weight:700}
 .share-feedback{min-height:20px;font-size:14px;color:#a5e8ce;margin:10px 0 0}
 .intro { display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:30px; }
 .status-col { display:flex;flex-direction:column;align-items:flex-end;gap:5px; }

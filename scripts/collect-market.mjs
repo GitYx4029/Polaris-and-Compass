@@ -174,25 +174,34 @@ let starStatus=null,etfStatus=null;
 try{
   const amount=await star(specialDate);
   old.set(specialDate,{...old.get(specialDate),star:amount,starCheckedAt:now.toISOString()});
-  // Backfill the recent trend once; subsequent runs only retrieve new dates.
-  const backfill=dates.slice(-20,-1).filter(date=>!old.get(date)?.star);
-  for(let i=0;i<backfill.length;i+=4){
-    const batch=await Promise.allSettled(backfill.slice(i,i+4).map(async date=>({date,amount:await star(date)})));
-    for(const value of batch)if(value.status==='fulfilled'){
-      const {date,amount}=value.value;
-      old.set(date,{...old.get(date),star:amount,starCheckedAt:now.toISOString()});
-    }
-  }
 }catch(e){starStatus=String(e);console.warn(starStatus)}
+// A same-day SSE result can be unpublished at 15:25. Recover missing previous
+// sessions independently, even when today's official breakdown is still empty.
+const backfill=dates.slice(-20,-1).filter(date=>!old.get(date)?.star).slice(-3);
+const recovered=await Promise.allSettled(backfill.map(async date=>({date,amount:await star(date)})));
+for(const value of recovered)if(value.status==='fulfilled'){
+  const {date,amount}=value.value;
+  old.set(date,{...old.get(date),star:amount,starCheckedAt:now.toISOString()});
+}
 try{
   // One stable universe throughout a trading day. Switching providers changed
   // the fund count and made cumulative turnover appear to fall intraday.
-  const value=await etfTencent(specialDate,etf300?.amounts.get(specialDate));
   const previous=prior.history?.find(row=>row.date===specialDate);
+  // The evening retry needs the missing exchange value; reuse a fully closed
+  // ETF scan when both market totals are unchanged instead of scanning 12k codes.
+  const closedAndUnchanged=beijingClock>='17:10'&&prior.asOf===specialDate&&
+    previous?.sh===sh.amounts.get(specialDate)&&previous?.sz===sz.amounts.get(specialDate)&&
+    prior.quoteAt?.every(stamp=>stamp?.startsWith(specialDate)&&stamp.slice(11)>='15:15');
+  const value=closedAndUnchanged&&previous?.etfSource==='腾讯财经全代码段报价'&&
+    previous.etf>0&&previous.etfSh>0&&previous.etfSz>0&&previous.etfCount>500
+    ?{amount:previous.etf,sh:previous.etfSh,sz:previous.etfSz,count:previous.etfCount,
+      active:previous.etfActive,source:previous.etfSource,checkedAt:previous.etfCheckedAt}
+    :await etfTencent(specialDate,etf300?.amounts.get(specialDate));
   if(previous?.etfSource===value.source&&previous.etf!=null&&value.amount<previous.etf*.985)
     throw new Error(`ETF cumulative fell within same source: ${previous.etf.toFixed(2)} to ${value.amount.toFixed(2)}`);
   old.set(specialDate,{...old.get(specialDate),etf:value.amount,etfSh:value.sh,etfSz:value.sz,
-    etfCount:value.count,etfActive:value.active,etfSource:value.source,etfCheckedAt:now.toISOString()});
+    etfCount:value.count,etfActive:value.active,etfSource:value.source,
+    etfCheckedAt:value.checkedAt??now.toISOString()});
 }catch(e){
   // Do not carry a stale or differently scoped intraday ETF sum forward.
   old.set(specialDate,{...old.get(specialDate),etf:undefined,etfSh:undefined,etfSz:undefined,

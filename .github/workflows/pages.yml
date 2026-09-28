@@ -5,9 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # UTC 04:10 / 07:25 = China 12:10 / 15:25, weekdays.
+    # UTC 04:10 / 07:25 / 09:10 = China 12:10 / 15:25 / 17:10, weekdays.
     - cron: '10 4 * * 1-5'
     - cron: '25 7 * * 1-5'
+    # Retry the official STAR breakdown after the exchange publishes daily data.
+    - cron: '10 9 * * 1-5'
 
 permissions:
   contents: write

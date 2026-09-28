@@ -37,8 +37,8 @@ export function saveQuotePng(card: ShareImage): void {
   const sourceHeight = sourceLines.length * 35 + urlLines.length * 32;
   const quoteHeight = quoteLines.length * 79;
   const gridTop = 230 + quoteHeight + 82 + sourceHeight + 104;
-  const rowHeight = 132;
-  const height = gridTop + rowHeight * 3 + 108;
+  const rowHeight = 114;
+  const height = gridTop + rowHeight * 3 + 105;
   canvas.width = width;
   canvas.height = height;
   const gradient = ctx.createLinearGradient(0, 0, width, height);
@@ -83,8 +83,8 @@ export function saveQuotePng(card: ShareImage): void {
   card.data.forEach((entry, index) => {
     const col = index % 2, row = Math.floor(index / 2);
     const x = pad + col * (inner / 2), y = gridTop + 69 + row * rowHeight;
-    ctx.fillStyle = "#a9c8be";
-    ctx.font = '23px "PingFang SC", sans-serif';
+    ctx.fillStyle = "#69f0d9";
+    ctx.font = 'bold 23px "PingFang SC", sans-serif';
     ctx.fillText(entry.label, x, y);
     ctx.fillStyle = "#ffffff";
     ctx.font = 'bold 35px "PingFang SC", sans-serif';
@@ -92,13 +92,13 @@ export function saveQuotePng(card: ShareImage): void {
     if (entry.note) {
       ctx.fillStyle = "#95bdb0";
       ctx.font = '19px "PingFang SC", sans-serif';
-      ctx.fillText(entry.note, x, y + 81);
+      ctx.fillText(entry.note, x, y + 75);
     }
   });
   ctx.fillStyle = "#a5cbbd";
   ctx.font = "22px Arial, sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("powered by C.Luo w/ChatGPT", width - pad, height - 78);
+  ctx.fillText("powered by C.Luo w/ChatGPT", width - pad, height - 60);
 
   const anchor = document.createElement("a");
   anchor.href = canvas.toDataURL("image/png");
