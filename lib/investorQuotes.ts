@@ -292,8 +292,8 @@ const recentLetters: Array<[number,number,string]> = [
 ];
 
 const marksMemoAdditions: Array<["debt"|"money",string,string]> = [
-  ["debt","Debt and Survival","负债越高，可以承受的不利结果范围通常越窄。"],
-  ["debt","Debt and Survival","资产越不稳定，可审慎承担的杠杆程度应越低。"],
+  ["debt","开篇：债务与长期存续","负债越高，可以承受的不利结果范围通常越窄。"],
+  ["debt","开篇：债务与长期存续","资产越不稳定，可审慎承担的杠杆程度应越低。"],
   ["debt","Portfolios, Leverage, and Volatility","杠杆能放大盈利，也会同样放大本金损失。"],
   ["debt","Portfolios, Leverage, and Volatility","杠杆组合除波动外，还面临无法继续持有的风险。"],
   ["debt","Portfolios, Leverage, and Volatility","债权人收紧授信，可能迫使原本长期可持有的资产被卖出。"],
@@ -310,16 +310,16 @@ const marksMemoAdditions: Array<["debt"|"money",string,string]> = [
   ["debt","Using Debt Prudently","适度使用债务要同时权衡更高的潜在收益和亏损。"],
   ["money","Easy Times","利率顺风助推资产上涨时，不应把全部成果归功于能力。"],
   ["money","Easy Times","便宜的融资环境会暂时简化经营、融资与投资。"],
-  ["money","Low rates stimulate the economy","低利率刺激需求，也可能为之后的通胀与加息埋下条件。"],
-  ["money","Low rates reduce perceived opportunity costs","存款收益很低时，花钱或投资的机会成本不易被察觉。"],
-  ["money","Low rates lift asset prices","折现率下降时，未来现金流的现值一般会上升。"],
-  ["money","Low rates lift asset prices","安全资产回报下降，会抬高其他资产的相对吸引力。"],
-  ["money","Low rates lift asset prices","资产价格受低利率支持时，还要检查未来收益是否匹配估值。"],
-  ["money","Low rates encourage risk taking","安全资产收益不足，可能促使投资者接受本不愿承担的风险。"],
-  ["money","Low rates encourage risk taking","资金追逐风险资产，可能压低为承担风险获得的补偿。"],
-  ["money","Low rates encourage risk taking","流动性较差的资产若被热烈追捧，其额外回报可能缩小。"],
-  ["money","Low rates encourage risk taking","回报目标不能跟着无风险收益下降时，更应检验投资标准。"],
-  ["money","Low rates encourage risk taking","宽松融资支持的估值，可能同时鼓励过度投机。"],
+  ["money","1. Low interest rates stimulate the economy","低利率刺激需求，也可能为之后的通胀与加息埋下条件。"],
+  ["money","2. Low interest rates reduce perceived opportunity costs","存款收益很低时，花钱或投资的机会成本不易被察觉。"],
+  ["money","3. Low interest rates lift asset prices","折现率下降时，未来现金流的现值一般会上升。"],
+  ["money","3. Low interest rates lift asset prices","安全资产回报下降，会抬高其他资产的相对吸引力。"],
+  ["money","3. Low interest rates lift asset prices","资产价格受低利率支持时，还要检查未来收益是否匹配估值。"],
+  ["money","4. Low interest rates encourage risk taking","安全资产收益不足，可能促使投资者接受本不愿承担的风险。"],
+  ["money","4. Low interest rates encourage risk taking","资金追逐风险资产，可能压低为承担风险获得的补偿。"],
+  ["money","4. Low interest rates encourage risk taking","流动性较差的资产若被热烈追捧，其额外回报可能缩小。"],
+  ["money","4. Low interest rates encourage risk taking","回报目标不能跟着无风险收益下降时，更应检验投资标准。"],
+  ["money","4. Low interest rates encourage risk taking","宽松融资支持的估值，可能同时鼓励过度投机。"],
 ];
 
 const originalQuotes: InvestorQuote[] = [
