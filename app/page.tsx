@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Copy, Download, RefreshCw, Share2, X } from "lucide-react";
 import { composeDays, parseTencent, type Day, type MarketRow } from "@/lib/market";
 import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { isCloseConfirmed, nextScheduledRefresh } from "@/lib/refreshSchedule";
+import { saveQuotePng, type ShareDatum } from "@/lib/quoteImage";
 
 type Detail = { date:string;sh:number;sz:number;star?:number;starCheckedAt?:string;etf?:number;etfSh?:number;etfSz?:number;etfCount?:number;etfActive?:number;etfSource?:string;etfCheckedAt?:string;etfReferenceUrl?:string;etf510300?:number|null };
 type Snapshot = { asOf:string;generatedAt:string;history:Detail[];quoteAt?:[string|null,string|null];status?:{star?:string|null;etf?:string|null} };
@@ -188,7 +189,7 @@ function Chart({data}:{data:Day[]}) {
     <div><span>当日合计</span><b>{(selected.total/10000).toFixed(4)} 万亿元</b></div>
     <div><span>沪市 / 深市</span><b>{(selected.sh/10000).toFixed(4)} / {(selected.sz/10000).toFixed(4)} 万亿元</b></div>
   </div>}<div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div>
-  <label className="chart-scrubber"><span>拖动选择交易日</span><input type="range" min={0} max={pts.length-1} step={1} value={Math.min(picked??pts.length-1,pts.length-1)}
+  <label className="chart-scrubber"><span>拖动选择交易日</span><input type="range" min={0} max={pts.length-1} step={1} value={Math.min(picked??pts.length-1,pts.length-1)} style={{"--scrub-progress":`${(picked??pts.length-1)/(pts.length-1)*100}%`} as CSSProperties}
     onChange={event=>{setHover(null);setPicked(Number(event.currentTarget.value))}} aria-label="选择滚动累计交易日"/><strong>{selected.date}</strong></label>
   <p className="chart-readout">20 日累计 <b>{(selected.roll20!/10000).toFixed(4)} 万亿元</b> · 当日 <b>{(selected.total/10000).toFixed(4)} 万亿元</b> · 资金温度 <b>{(selected.heat!*100).toFixed(1)}%</b></p></div>;
 }
@@ -198,13 +199,13 @@ const chartModes=[
   {key:"sh",label:"上证市场",unit:"亿元",scale:1},
   {key:"star",label:"科创板",unit:"亿元",scale:1},
   {key:"etf",label:"沪深 ETF",unit:"亿元",scale:1},
-  {key:"etf510300",label:"510300",unit:"亿元",scale:1},
+  {key:"etf510300",label:"510300 · 华泰柏瑞",unit:"亿元",scale:1},
   {key:"roll20",label:"20 日累计",unit:"万亿元",scale:10000},
   {key:"avg20",label:"20 日均量",unit:"亿元",scale:1}
 ] as const;
 type ChartKey=typeof chartModes[number]["key"];
 type MetricKey=ChartKey|"sz"|"heat"|"etfSh"|"etfSz";
-const metricLabels:Record<MetricKey,string>={total:"沪深两市成交额",sh:"上证市场成交额",sz:"深证市场成交额",star:"科创板成交额",etf:"沪深 ETF 成交额",etfSh:"沪市 ETF 成交额",etfSz:"深市 ETF 成交额",etf510300:"510300 成交额",roll20:"近 20 日累计成交额",avg20:"20 日平均成交额",heat:"资金温度"};
+const metricLabels:Record<MetricKey,string>={total:"沪深两市成交额",sh:"上证市场成交额",sz:"深证市场成交额",star:"科创板成交额",etf:"沪深 ETF 成交额",etfSh:"沪市 ETF 成交额",etfSz:"深市 ETF 成交额",etf510300:"510300 沪深300ETF华泰柏瑞 成交额",roll20:"近 20 日累计成交额",avg20:"20 日平均成交额",heat:"资金温度"};
 
 function metricValue(result:Result,day:Day,key:MetricKey):number|undefined {
   const extra=result.snapshot?.history.find(item=>item.date===day.date);
@@ -251,7 +252,7 @@ function MobileHistory({days,result,provisional}:{days:Day[];result:Result|null;
       ["上证市场",wan(day.sh),"万亿元"],["深证市场",wan(day.sz),"万亿元"],
       ["科创板",extra?.star!==undefined?yi(extra.star):"—","亿元"],
       ["沪深 ETF",extra?.etf!==undefined?yi(extra.etf):"—","亿元"],
-      ["510300",single!=null?yi(single):"—","亿元"],
+      ["510300 沪深300ETF华泰柏瑞",single!=null?yi(single):"—","亿元"],
       ["20 日累计",day.date!==provisional&&day.roll20!==undefined?wan(day.roll20):"—","万亿元"],
       ["20 日平均",day.date!==provisional&&day.avg20!==undefined?yi(day.avg20):"—","亿元"],
       ["资金温度",day.date!==provisional&&day.heat!==undefined?(day.heat*100).toFixed(1):"—","%"]
@@ -266,6 +267,7 @@ function MobileHistory({days,result,provisional}:{days:Day[];result:Result|null;
 function MarketChart({days,result,provisional}:{days:Day[];result:Result|null;provisional:string|null}) {
   const [mode,setMode]=useState<ChartKey>("total");
   const [hover,setHover]=useState<number|null>(null);
+  const [picked,setPicked]=useState<number|null>(null);
   const detail=new Map(result?.snapshot?.history.map(item=>[item.date,item])??[]);
   const selectedMode=chartModes.find(item=>item.key===mode)!;
   const pts=days.filter(day=>!(day.date===provisional&&(mode==="roll20"||mode==="avg20"))).map(day=>{
@@ -281,11 +283,12 @@ function MarketChart({days,result,provisional}:{days:Day[];result:Result|null;pr
   const min=Math.max(0,low-(high-low||high*.1)*.2),max=high+(high-low||high*.1)*.2;
   const x=(index:number)=>p+index*(w-p*2)/Math.max(1,pts.length-1);
   const y=(value:number)=>h-p-(value-min)/(max-min||1)*(h-p*2);
-  const focus=hover===null?null:pts[hover];
+  const activeIndex=Math.min(hover??picked??pts.length-1,pts.length-1);
+  const focus=pts.length?pts[activeIndex]:null;
   return <section className="panel multi-trend"><div className="panel-header"><div><p className="eyebrow">MARKET SERIES</p><h2>各层级成交额趋势</h2></div><div className="panel-actions"><span>选择指标 · 悬停查看数值</span><DataDownload result={result} metric={mode}/></div></div>
     <div className="chart-tabs" role="group" aria-label="趋势指标">{chartModes.map(item=><button
       key={item.key} className={mode===item.key?"active":""} aria-pressed={mode===item.key}
-      onClick={()=>{setMode(item.key);setHover(null)}}>{item.label}</button>)}</div>
+      onClick={()=>{setMode(item.key);setHover(null);setPicked(null)}}>{item.label}</button>)}</div>
     {pts.length<2?<div className="chart-empty">{pts.length===1?`${pts[0].date}：${pts[0].value.toFixed(2)} ${selectedMode.unit}；等待下一交易日以绘制趋势`:"该指标的已核实历史数据暂不足两日"}</div>
     :<div className="line-frame extra-chart"><svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${selectedMode.label}历史成交额趋势`}
       onPointerMove={event=>{const rect=event.currentTarget.getBoundingClientRect();const px=(event.clientX-rect.left)/rect.width*w;
@@ -293,9 +296,12 @@ function MarketChart({days,result,provisional}:{days:Day[];result:Result|null;pr
       onPointerLeave={()=>setHover(null)}>
       {[0,1,2].map(i=><g key={i}><line x1={p} x2={w-p} y1={p+i*(h-2*p)/2} y2={p+i*(h-2*p)/2} stroke="#38565a" strokeDasharray="4 6"/><text x={w-p} y={p+i*(h-2*p)/2-5} textAnchor="end" fill="#abc6c1" fontSize="14">{(max-i*(max-min)/2).toFixed(2)}</text></g>)}
       <path d={pts.map((point,index)=>`${index?"L":"M"}${x(index)},${y(point.value)}`).join(" ")} fill="none" stroke="#62d4bd" strokeWidth="3" vectorEffect="non-scaling-stroke"/>
-      {focus&&<circle cx={x(hover!)} cy={y(focus.value)} r="7" fill="#d5fff0"/>}
-    </svg>{focus&&<div className="chart-tooltip" style={{left:`clamp(110px,${x(hover!)/w*100}%,calc(100% - 110px))`,top:`${y(focus.value)/h*170}px`,transform:"translate(-50%,-105%)"}} role="status"><strong>{focus.date}</strong><div><span>{selectedMode.label}</span><b>{focus.value.toFixed(4)} {selectedMode.unit}</b></div></div>}
-    <div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div></div>}
+      {focus&&<circle cx={x(activeIndex)} cy={y(focus.value)} r="7" fill="#d5fff0"/>}
+    </svg>{focus&&hover!==null&&<div className="chart-tooltip" style={{left:`clamp(110px,${x(activeIndex)/w*100}%,calc(100% - 110px))`,top:`${y(focus.value)/h*170}px`,transform:"translate(-50%,-105%)"}} role="status"><strong>{focus.date}</strong><div><span>{selectedMode.label}</span><b>{focus.value.toFixed(4)} {selectedMode.unit}</b></div></div>}
+    <div className="chart-axis"><span>{pts[0].date.slice(5)}</span><span>{pts.at(-1)!.date.slice(5)}</span></div>
+    <label className="chart-scrubber"><span>拖动选择交易日</span><input type="range" min={0} max={pts.length-1} step={1} value={activeIndex} style={{"--scrub-progress":`${activeIndex/(pts.length-1)*100}%`} as CSSProperties}
+      onChange={event=>{setHover(null);setPicked(Number(event.currentTarget.value))}} aria-label={`选择${selectedMode.label}趋势交易日`}/><strong>{focus?.date}</strong></label>
+    {focus&&<p className="chart-readout">{selectedMode.label} <b>{focus.value.toFixed(4)} {selectedMode.unit}</b>{focus.source&&` · ${focus.source}`}</p>}</div>}
     {mode==="etf"&&pts.some(point=>point.url)&&<details className="chart-sources"><summary>查看 ETF 历史补录来源（{pts.filter(point=>point.url).length} 个交易日）</summary>
       <div>{pts.filter(point=>point.url).map(point=><a key={point.date} href={point.url} target="_blank" rel="noreferrer">{point.date} · 财闻日报 · {point.value.toFixed(2)} 亿元</a>)}</div></details>}
     {mode==="etf"&&focus?.url&&<p className="fine">{focus.date} 为历史报道补录：<a href={focus.url} target="_blank" rel="noreferrer">查看财闻 ETF 日报</a>。与定时采集记录分开标注来源。</p>}
@@ -369,6 +375,20 @@ export default function Home() {
   const heat=!provisional?latest?.heat:undefined;
   const phase=waitingClose?"收盘数据待更新":waitingNoon?"午间数据待更新":intraday&&clock>="12:00"&&clock<"13:00"?"午间累计":intraday?"盘中累计":"收盘";
   const dailyQuote=investorQuotes[dailyQuoteIndex];
+  const shareData:ShareDatum[]=[
+    {label:"沪深两市成交额",value:latest?`${wan(latest.total)} 万亿元`:"待核实",note:provisional?"盘中暂计":"最近交易日"},
+    {label:"近 20 个交易日累计成交额",value:complete?.roll20!==undefined?`${wan(complete.roll20)} 万亿元`:"待核实",note:complete?.roll20!==undefined?`截至 ${complete.date}`:undefined},
+    {label:"20 日平均成交额",value:complete?.avg20!==undefined?`${yi(complete.avg20)} 亿元/日`:"待核实",note:complete?.avg20!==undefined?`截至 ${complete.date}`:undefined},
+    {label:"科创板成交额",value:latestDetail?.star!==undefined?`${yi(latestDetail.star)} 亿元`:"待核实",note:latestDetail?.star!==undefined?`交易日 ${latest?.date}`:undefined},
+    {label:"沪深 ETF 成交额",value:latestDetail?.etf!==undefined?`${yi(latestDetail.etf)} 亿元`:"待核实",note:latestDetail?.etf!==undefined?`交易日 ${latest?.date}`:undefined}
+  ];
+  const saveQuoteImage=async()=>{
+    try{
+      await saveQuotePng({quote:dailyQuote.text,author:dailyQuote.author,source:dailyQuote.source,locator:dailyQuote.locator,url:dailyQuote.url,
+        date:latest?.date??today,stage:latest?phase:"等待数据",data:shareData});
+      setShareFeedback("PNG 图片已生成并开始下载");
+    }catch(error){setShareFeedback(error instanceof Error?`图片保存失败：${error.message}`:"图片保存失败");}
+  };
   const copyQuote=async()=>{
     try{await navigator.clipboard.writeText(quoteShareText(dailyQuote));setShareFeedback("观点、出处和来源链接已复制");}
     catch{setShareFeedback("复制失败，请选择卡片文字手动复制");}
@@ -382,7 +402,7 @@ export default function Home() {
     <header className="topbar"><div className="brand"><span className="brand-mark"/>大A观测助手</div><div className="top-right"><span>沪深两市 · {waitingClose?"收盘核对中":intraday?"盘中更新":"最近交易日"}</span><button onClick={refresh} disabled={loading}><RefreshCw size={17} className={loading?"spinning":""}/>刷新</button></div></header>
     <div className="content">
       <section className="daily-quote" aria-label="每日投资观点"><div className="quote-body"><span className="quote-label">今日投资观点 · {dailyQuote.author}</span><p>“{dailyQuote.text}”</p><a href={dailyQuote.url} target="_blank" rel="noreferrer">出处：{dailyQuote.source} · {dailyQuote.locator}</a><span className="quote-note">据原文意译或归纳</span></div><div className="quote-actions"><button className="quote-export" onClick={()=>{setShareFeedback("");setShareOpen(true)}}><Share2 size={15}/>分享观点</button><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>导出观点库 CSV（{investorQuotes.length} 条）</button></div></section>
-      {shareOpen&&<div className="share-backdrop" onClick={event=>{if(event.target===event.currentTarget)setShareOpen(false)}}><section className="share-dialog" role="dialog" aria-modal="true" aria-labelledby="share-heading"><div className="share-heading"><h2 id="share-heading">分享今日投资观点</h2><button type="button" onClick={()=>setShareOpen(false)} aria-label="关闭分享卡片" autoFocus><X size={19}/></button></div><div className="share-card"><span>大A观测助手 · 今日投资观点</span><blockquote>“{dailyQuote.text}”</blockquote><p className="share-author">—— {dailyQuote.author}</p><p className="share-source">出处：<a href={dailyQuote.url} target="_blank" rel="noreferrer">{dailyQuote.source} · {dailyQuote.locator}</a></p><p className="share-paraphrase">据原文意译或归纳</p><footer>powered by C.Luo w/ChatGPT</footer></div><div className="share-actions"><button type="button" onClick={copyQuote}><Copy size={17}/>复制分享文案</button><button type="button" onClick={shareQuote}><Share2 size={17}/>系统分享</button></div><p className="share-feedback" role="status">{shareFeedback}</p></section></div>}
+      {shareOpen&&<div className="share-backdrop" onClick={event=>{if(event.target===event.currentTarget)setShareOpen(false)}}><section className="share-dialog" role="dialog" aria-modal="true" aria-label="投资观点分享卡片"><div className="share-heading"><button type="button" onClick={()=>setShareOpen(false)} aria-label="关闭分享卡片" autoFocus><X size={19}/></button></div><div className="share-card"><span>大A观测助手 · 今日投资观点</span><blockquote>“{dailyQuote.text}”</blockquote><p className="share-author">—— {dailyQuote.author}</p><p className="share-source">出处：<a href={dailyQuote.url} target="_blank" rel="noreferrer">{dailyQuote.source} · {dailyQuote.locator}</a></p><p className="share-paraphrase">据原文意译或归纳</p><div className="share-market"><h3>市场数据 · {latest?.date??today} · {latest?phase:"等待数据"}</h3><div className="share-market-grid">{shareData.map(item=><div key={item.label}><span>{item.label}</span><strong>{item.value}</strong>{item.note&&<small>{item.note}</small>}</div>)}</div></div><footer>powered by C.Luo w/ChatGPT</footer></div><div className="share-actions"><button type="button" onClick={saveQuoteImage}><Download size={17}/>保存图片 PNG</button><button type="button" onClick={copyQuote}><Copy size={17}/>复制分享文案</button><button type="button" onClick={shareQuote}><Share2 size={17}/>系统分享</button></div><p className="share-feedback" role="status">{shareFeedback}</p></section></div>}
       <div className="intro"><div><p className="eyebrow">MARKET ACTIVITY / DAILY</p><h1>成交活跃度</h1></div><div className="status-col"><div className="freshness"><span className={`dot ${latest?"good":""}`}/>{loading&&!latest?"正在读取行情数据":latest?`数据日期 ${latest.date} · ${phase}`:"暂无有效数据"}</div><div className="schedule-hint">北京时间 12:00 / 15:15 自动刷新</div></div></div>
       {error&&<div className="notice error" role="alert">{error} <button onClick={refresh}>重试</button></div>}
       {!provisional&&latest&&prev&&tier(prev.total/10000)!==currentTier&&<div className="notice" role="status">最近交易日成交额进入 <strong>{tiers[currentTier!].text} 万亿</strong> 区间，<a href="#guide-daily">查看指南针解读参考</a>。</div>}
@@ -400,7 +420,7 @@ export default function Home() {
           {metric:"sz",label:"深证市场",value:latest?.sz,note:"与沪市合计构成上方总额"},
           {metric:"star",label:"科创板",value:latestDetail?.star,note:"上交所股票分类统计"},
           {metric:"etf",label:"沪深 ETF",value:latestDetail?.etf,note:latestDetail?.etfCount?`已核对 ${latestDetail.etfCount.toLocaleString("zh-CN")} 只 · ${latestDetail.etfSource??"ETF 行情"}` :"ETF 明细全量汇总"},
-          {metric:"etf510300",label:"510300",value:etf300??undefined,note:"沪深300ETF · ETF 总额子集"}
+          {metric:"etf510300",label:"510300",value:etf300??undefined,note:"沪深300ETF华泰柏瑞 · ETF 总额子集"}
         ].map((item,index)=><div className={`depth-row depth-${index}`} key={item.label}><div className="depth-name"><strong>{item.label}</strong><small>{item.note}</small></div>
           <div className="depth-data"><b>{item.value!==undefined&&item.value!==null?yi(item.value):"—"}</b><span>{item.value!==undefined&&item.value!==null?"亿元":"同日数据待核实"}</span><DataDownload result={result} metric={item.metric as MetricKey} iconOnly/></div>
           <div className="depth-bar"><span style={{width:`${latest&&item.value?Math.max(1,item.value/latest.total*100):0}%`}}/></div></div>)}</div>
@@ -410,7 +430,7 @@ export default function Home() {
       <MarketChart days={days} result={result} provisional={provisional}/>
       <section className="panel guide" id="reference"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST / 解读参考</p><h2>指标、阈值与观察含义</h2></div><span>按对应数据口径分区</span></div>
         <p className="reference-credit">本页观察工具箱来自“袁莹投资思维”；以下阈值用于标注原有观察规则，实际数据由行情与交易所来源核对。</p>
-        <div className="guide-groups">
+        <p className="guide-swipe-hint">左右滑动查看三项解读参考 →</p><div className="guide-groups" aria-label="指南针、北极星和资金温度计解读参考">
           <div className="guide-block" id="guide-daily"><span className="guide-index">01 · 当日沪深成交额</span><h3>指南针</h3><p className="guide-description">大 A 每日成交额 · 单位：万亿元</p>
             <div className="range-list">{tiers.map((t,i)=><div className={`reference-entry ${i===currentTier?"active":""}`} key={t.text}><strong>{t.text}</strong><div><b>{t.name}</b><small>{t.note}</small></div>{i===currentTier&&<em>{provisional?"前收":"当前"}</em>}</div>)}</div>
           </div>
