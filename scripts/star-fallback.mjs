@@ -74,7 +74,14 @@ export async function starFallback(date,shTotal,get){
       const index=next++,group=groups[index];
       const url=new URL('https://qt.gtimg.cn/');
       url.searchParams.set('q',[...group.filter(code=>code!=='688981'),'sh688981'].map(code=>code.startsWith('sh')?code:`sh${code}`).join(','));
-      batches[index]=[group,await get(url)];
+      let raw;
+      try{raw=await get(url)}
+      catch(first){
+        await new Promise(resolve=>setTimeout(resolve,250));
+        try{raw=await get(url)}
+        catch(second){throw new Error(`Tencent STAR ${group[0]} retry failed: ${first}; ${second}`)}
+      }
+      batches[index]=[group,raw];
     }}
     await Promise.all(Array.from({length:6},()=>worker()));
     return parseTencentStarBatches(batches,date,shTotal);
