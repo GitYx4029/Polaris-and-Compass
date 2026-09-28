@@ -1,13 +1,13 @@
 {
   "asOf": "2026-09-28",
-  "generatedAt": "2026-09-28T07:28:29.124Z",
+  "generatedAt": "2026-09-28T07:44:37.341Z",
   "quoteAt": [
-    "2026-09-28 15:28",
-    "2026-09-28 15:28"
+    "2026-09-28 15:44",
+    "2026-09-28 15:44"
   ],
   "source": "腾讯财经 / 上海证券交易所 / 腾讯财经全代码段报价",
   "status": {
-    "star": "Error: SSE 2026-09-28: no daily breakdown",
+    "star": "Error: SSE endpoints unavailable: Error: query.sse.com.cn: HTTP 403; Error: query.sse.com.cn: HTTP 403",
     "etf": null
   },
   "history": [
@@ -1889,13 +1889,13 @@
       "sh": 8045.43704708,
       "sz": 8982.55357218,
       "etf510300": 43.73095288,
-      "etf": 4889.034363699999,
-      "etfSh": 3686.164667279999,
-      "etfSz": 1202.8696964199999,
-      "etfCount": 1858,
+      "etf": 4889.034363699993,
+      "etfSh": 3686.164667279993,
+      "etfSz": 1202.8696964200003,
+      "etfCount": 1861,
       "etfActive": 1685,
       "etfSource": "腾讯财经全代码段报价",
-      "etfCheckedAt": "2026-09-28T07:28:29.124Z"
+      "etfCheckedAt": "2026-09-28T07:44:37.341Z"
     }
   ]
 }
