@@ -23,13 +23,19 @@ function lines(ctx: CanvasRenderingContext2D, content: string, width: number): s
   return result;
 }
 
-export function saveQuotePng(card: ShareImage): void {
+export async function saveQuotePng(card: ShareImage): Promise<void> {
+  // Canvas does not inherit CSS fonts. Wait for the locally hosted Chinese
+  // font before measuring and drawing, otherwise mobile silently uses serif.
+  const quoteFont = '500 48px "Quote WenKai"';
+  await document.fonts.load(quoteFont, `“${card.quote}”`);
+  if (!document.fonts.check(quoteFont, `“${card.quote}”`))
+    throw new Error("楷体字库未能加载，请检查网络后重试");
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("浏览器未提供图片绘制功能");
   // Fixed pixel dimensions make the exported image readable in chat apps.
   const width = 1080, pad = 76, inner = width - pad * 2;
-  ctx.font = '48px "KaiTi", "STKaiti", "Kaiti SC", serif';
+  ctx.font = quoteFont;
   const quoteLines = lines(ctx, `“${card.quote}”`, inner);
   ctx.font = '23px "Noto Sans CJK SC", "PingFang SC", sans-serif';
   const sourceLines = lines(ctx, `出处：${card.source} · ${card.locator}`, inner);
@@ -55,7 +61,7 @@ export function saveQuotePng(card: ShareImage): void {
   ctx.font = '27px "PingFang SC", sans-serif';
   ctx.fillText("大A观测助手 · 今日投资观点", pad, 77);
   ctx.fillStyle = "#ffffff";
-  ctx.font = '48px "KaiTi", "STKaiti", "Kaiti SC", serif';
+  ctx.font = quoteFont;
   quoteLines.forEach((line, index) => ctx.fillText(line, pad, 176 + index * 79));
   const authorY = 196 + quoteHeight;
   ctx.font = '28px "PingFang SC", sans-serif';

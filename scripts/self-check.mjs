@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {parseTencent,composeDays} from '../lib/market.ts';
 import {isCloseConfirmed,nextScheduledRefresh} from '../lib/refreshSchedule.ts';
-import {alignedQuoteDates,unchangedClosedSession} from './market-session.mjs';
+import {alignedQuoteDates,unchangedClosedSession,alreadyVerifiedClose} from './market-session.mjs';
 import {parseEastmoneyStar,parseTencentStarBatches,starFallback} from './star-fallback.mjs';
 
 const bars=Array.from({length:21},(_,i)=>{
@@ -27,7 +27,8 @@ assert.equal(days[20].avg20,15021);
 assert.equal(days[20].heat,(15000+40)/15021);
 assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T03:59:00Z')),60_000);
 assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T04:00:00Z')),(3*60+15)*60_000);
-assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T07:15:00Z')),(2*60+25)*60_000);
+assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T07:15:00Z')),40*60_000);
+assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T09:55:00Z')),60*60_000);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-28 15:00'],Date.parse('2026-09-28T07:14:00Z')),false);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-28 15:00'],Date.parse('2026-09-28T07:15:00Z')),true);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-24 16:14'],Date.parse('2026-09-28T07:15:00Z')),false);
@@ -35,6 +36,14 @@ const prior={asOf:'2026-09-24',history:[{date:'2026-09-24',sh:7836.13,sz:8697.44
 assert.equal(unchangedClosedSession('2026-09-24','2026-09-28',prior,7836.13,8697.44),true);
 assert.equal(unchangedClosedSession('2026-09-24','2026-09-28',prior,7836.13,8698),false);
 assert.equal(unchangedClosedSession('2026-09-28','2026-09-28',prior,1,1),false);
+const verified={asOf:'2026-09-29',generatedAt:'2026-09-29T09:20:00Z',
+  quoteAt:['2026-09-29 15:15','2026-09-29 15:15'],history:[{date:'2026-09-29',sh:1,sz:2,
+    star:0.5,starSource:'上海证券交易所分类成交',etf:0.4,
+    etfSource:'腾讯财经全代码段报价',etfCount:600}]};
+assert.equal(alreadyVerifiedClose('2026-09-29','2026-09-29',verified,1,2),true);
+assert.equal(alreadyVerifiedClose('2026-09-29','2026-09-29',verified,1,3),false);
+assert.equal(alreadyVerifiedClose('2026-09-29','2026-09-29',
+  {...verified,history:[{...verified.history[0],starSource:'腾讯财经科创板代码成交额'}]},1,2),false);
 assert.equal(alignedQuoteDates('2026-09-28','20260928113000','20260928113000'),true);
 assert.equal(alignedQuoteDates('2026-09-28','20260928113000','20260924161400'),false);
 const codes=[...Array.from({length:614},(_,i)=>`688${String(i).padStart(3,'0')}`),'688981'];

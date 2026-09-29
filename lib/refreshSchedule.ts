@@ -1,6 +1,7 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
-const CHECKPOINTS = [12 * 60, 15 * 60 + 15, 17 * 60 + 40];
+const CHECKPOINTS = [12 * 60, 15 * 60 + 15, 15 * 60 + 55,
+  16 * 60 + 55, 17 * 60 + 55, 18 * 60 + 55];
 
 export function isCloseConfirmed(date:string,quoteAt:(string|null)[],nowMs:number):boolean {
   const beijing=new Date(nowMs+BEIJING_OFFSET_MS).toISOString();

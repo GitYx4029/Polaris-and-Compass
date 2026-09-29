@@ -1,8 +1,8 @@
-// Run only from the scheduled market-collection workflow or its manual trigger.
+// Run from the market-collection workflow (schedule, source change, or manual trigger).
 // Values are RMB 100 million (亿元). A failed source never becomes a zero.
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {alignedQuoteDates,unchangedClosedSession} from './market-session.mjs';
+import {alignedQuoteDates,unchangedClosedSession,alreadyVerifiedClose} from './market-session.mjs';
 import {starFallback} from './star-fallback.mjs';
 
 const output = path.resolve('public/data/market-snapshot.json');
@@ -138,8 +138,9 @@ const latest=dates.at(-1);
 if(!latest||latest>beijing)throw new Error(`unexpected latest date ${latest}`);
 // A new publish or a holiday should not spend another full ETF scan on the
 // same, already verified closing session or make old data appear newly checked.
-if(unchangedClosedSession(latest,beijing,prior,sh.amounts.get(latest),sz.amounts.get(latest))){
-  console.log(JSON.stringify({asOf:latest,unchanged:true,reason:'no new trading session'}));
+if(unchangedClosedSession(latest,beijing,prior,sh.amounts.get(latest),sz.amounts.get(latest))||
+   alreadyVerifiedClose(latest,beijing,prior,sh.amounts.get(latest),sz.amounts.get(latest))){
+  console.log(JSON.stringify({asOf:latest,unchanged:true,reason:'already verified closing session'}));
   process.exit(0);
 }
 // On a trading day, the two independent market quotes must cover the same
@@ -195,9 +196,9 @@ try{
   // One stable universe throughout a trading day. Switching providers changed
   // the fund count and made cumulative turnover appear to fall intraday.
   const previous=prior.history?.find(row=>row.date===specialDate);
-  // The evening retry needs the missing exchange value; reuse a fully closed
+  // Later close retries need the missing exchange value; reuse a fully closed
   // ETF scan when both market totals are unchanged instead of scanning 12k codes.
-  const closedAndUnchanged=beijingClock>='17:10'&&prior.asOf===specialDate&&
+  const closedAndUnchanged=beijingClock>='15:40'&&prior.asOf===specialDate&&
     previous?.sh===sh.amounts.get(specialDate)&&previous?.sz===sz.amounts.get(specialDate)&&
     prior.quoteAt?.every(stamp=>stamp?.startsWith(specialDate)&&stamp.slice(11)>='15:15');
   const value=closedAndUnchanged&&previous?.etfSource==='腾讯财经全代码段报价'&&

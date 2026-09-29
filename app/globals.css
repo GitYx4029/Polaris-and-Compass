@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+@font-face{font-family:"Quote WenKai";src:url("/Polaris-and-Compass/fonts/quote-wenkai.woff2") format("woff2");font-style:normal;font-weight:500;font-display:swap}
 :root { color-scheme: dark; font-family: ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#07181d;color:#e5eeec; }
 * { box-sizing:border-box; }
 body { margin:0; min-width:320px; }
@@ -17,7 +18,7 @@ a { color:#8dd9c9; text-underline-offset:3px; }
 .daily-quote { display:flex;align-items:center;justify-content:space-between;gap:22px;background:#123036;border:1px solid #345755;border-radius:11px;padding:16px 21px;margin-bottom:27px; }
 .quote-body { min-width:0; }
 .quote-label { display:block;color:#76d1bb;font-size:13px;font-weight:650;letter-spacing:.05em;margin-bottom:5px; }
-.quote-body p { font-family:"KaiTi","STKaiti","Kaiti SC","FangSong",serif;font-size:22px;font-weight:400;line-height:1.55;color:#eff8f5;margin:0 0 7px; }
+.quote-body p { font-family:"Quote WenKai","KaiTi","STKaiti","Kaiti SC","FangSong",serif;font-size:22px;font-weight:500;line-height:1.55;color:#eff8f5;margin:0 0 7px; }
 .quote-body a,.quote-note { font-size:13px;color:#a9c9c3; }
 .quote-note { margin-left:11px; }
 .quote-actions{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex:none}
@@ -30,7 +31,7 @@ a { color:#8dd9c9; text-underline-offset:3px; }
 .share-heading{display:flex;justify-content:flex-end;margin-bottom:10px}
 .share-heading button{background:transparent;color:#d0e7dc;border:1px solid #4c706b;border-radius:7px;display:grid;place-items:center;width:36px;height:36px}
 .share-card{border:1px solid #60796f;background:linear-gradient(155deg,#173c39,#112b33 78%);padding:29px 27px;border-radius:10px;overflow-wrap:anywhere;overflow-y:auto;min-height:0}
-.share-card>span{font-size:14px;color:#a8d6c7}.share-card blockquote{font-family:"KaiTi","STKaiti","Kaiti SC","FangSong",serif;font-weight:400;font-size:28px;line-height:1.7;color:#fff;margin:30px 0 18px}
+.share-card>span{font-size:14px;color:#a8d6c7}.share-card blockquote{font-family:"Quote WenKai","KaiTi","STKaiti","Kaiti SC","FangSong",serif;font-weight:500;font-size:28px;line-height:1.7;color:#fff;margin:30px 0 18px}
 .share-author{text-align:right;font-size:17px;color:#d4e8dd}.share-source{border-top:1px solid #476660;padding-top:15px;margin:20px 0 0;font-size:14px;line-height:1.55;color:#c5dcd2}.share-source a{color:#d1f1e4}
 .share-paraphrase{font-size:13px;color:#a6c0b6;margin:7px 0 0}.share-card footer{border-top:1px solid #476660;margin:22px 0 0;padding-top:12px;font-size:13px;color:#afd0c1;text-align:right;max-width:none}
 .share-market{border-top:1px solid #476660;margin-top:18px;padding-top:17px}.share-market h3{font-size:15px;font-weight:600;color:#a8d6c7;margin:0 0 12px}.share-market-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}.share-market-grid>div{min-width:0}.share-market-grid span,.share-market-grid small{display:block;color:#a9c6bb;font-size:13px}.share-market-grid strong{display:block;color:#f0fbf5;font-size:18px;font-variant-numeric:tabular-nums;margin-top:3px}.share-market-grid small{font-size:12px;margin-top:2px}
