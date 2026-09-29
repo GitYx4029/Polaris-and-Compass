@@ -48,7 +48,7 @@ export function summarizeStar(batches:QuoteBatch[],date:string,shTotal:number){
   if(seen.size<615||active<570||total<100||total>=shTotal*.9)
     throw new Error(`科创板覆盖或金额异常：${active}/${seen.size}`);
   return {star:total,starCount:seen.size,starActive:active,
-    starSource:'腾讯财经科创板全代码段报价（浏览器补采）'};
+    starSource:'腾讯财经科创板逐只报价（竞价口径，浏览器补采）'};
 }
 
 export function summarizeEtf(batches:QuoteBatch[],date:string,etf300:number|null){

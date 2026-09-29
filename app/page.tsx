@@ -405,7 +405,9 @@ export default function Home() {
           storageSet(recoveryKey(date),JSON.stringify(combined));
           storageSet(retryKey,String(Date.now()+15*60_000));
           if(id===requestId.current){setResult(mergeRecovery(shown,combined));
-            setDetailStatus(combined.star!==undefined&&combined.etf!==undefined?'细分项已由当前浏览器补采；仓库快照稍后独立更新。':'部分细分项已补采，其余仍待核实并将稍后重试。')}
+            setDetailStatus(combined.star!==undefined&&combined.etf!==undefined?
+              'ETF 已直连核验；科创为竞价口径参考值，交易所分类终值待仓库补采。':
+              '部分细分项已补采，其余仍待核实并将稍后重试。')}
         }
       }catch{
         storageSet(retryKey,String(Date.now()+15*60_000));
@@ -483,7 +485,7 @@ export default function Home() {
     {label:"沪深两市成交额",value:latest?`${wan(latest.total)} 万亿元`:"待核实",note:provisional?"盘中暂计":undefined},
     {label:"近 20 个交易日累计成交额",value:complete?.roll20!==undefined?`${wan(complete.roll20)} 万亿元`:"待核实",note:provisional&&complete?.roll20!==undefined?"截至上一完整交易日":undefined},
     {label:"20 日平均成交额",value:complete?.avg20!==undefined?`${yi(complete.avg20)} 亿元/日`:"待核实",note:provisional&&complete?.avg20!==undefined?"截至上一完整交易日":undefined},
-    {label:"科创板成交额",value:latestDetail?.star!==undefined?`${yi(latestDetail.star)} 亿元`:"待核实",note:latestDetail?.star===undefined?"上交所同日分类暂缺":undefined},
+    {label:"科创板成交额",value:latestDetail?.star!==undefined?`${yi(latestDetail.star)} 亿元`:"待核实",note:latestDetail?.starSource?.includes('浏览器补采')?'竞价口径参考，待交易所核对':latestDetail?.star===undefined?"上交所同日分类暂缺":undefined},
     {label:"沪深 ETF 成交额",value:latestDetail?.etf!==undefined?`${yi(latestDetail.etf)} 亿元`:"待核实"}
   ];
   const saveQuoteImage=async()=>{
