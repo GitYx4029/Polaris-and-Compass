@@ -396,8 +396,10 @@ export default function Home() {
             (existing?.star===undefined||Math.abs(existing.star-recovered.star)<Math.max(3,existing.star*.0075));
           const etfOK=!needEtf||recovered.etf!==undefined&&
             (existing?.etf===undefined||Math.abs(existing.etf-recovered.etf)<Math.max(3,existing.etf*.002));
-          if(id===requestId.current)setDetailStatus(starOK&&etfOK?
-            '直连自检与已发布快照一致。':'直连自检与快照存在差异，已保留原始快照供复核。');
+          if(id===requestId.current)setDetailStatus(
+            `${starOK&&etfOK?'直连复核偏差在校验范围内':'直连复核与快照存在差异，已保留原始快照'}：`+
+            `科创 ${recovered.star===undefined?'未取得':yi(recovered.star)} / ${existing?.star===undefined?'缺失':yi(existing.star)}，`+
+            `ETF ${recovered.etf===undefined?'未取得':yi(recovered.etf)} / ${existing?.etf===undefined?'缺失':yi(existing.etf)} 亿元（直连 / 快照）。`);
         }else{
           const combined={...cached,...recovered};
           storageSet(recoveryKey(date),JSON.stringify(combined));
