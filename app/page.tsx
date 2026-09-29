@@ -6,9 +6,10 @@ import { composeDays, parseTencent, type Day, type MarketRow } from "@/lib/marke
 import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { isCloseConfirmed, nextScheduledRefresh } from "@/lib/refreshSchedule";
 import { saveQuotePng, type ShareDatum } from "@/lib/quoteImage";
+import { recoverBrowserDetail, type RecoveredDetail } from "@/lib/browserDetail";
 
 type Detail = { date:string;sh:number;sz:number;star?:number;starCheckedAt?:string;starSource?:string;starCount?:number;starActive?:number;etf?:number;etfSh?:number;etfSz?:number;etfCount?:number;etfActive?:number;etfSource?:string;etfCheckedAt?:string;etfReferenceUrl?:string;etf510300?:number|null };
-type Snapshot = { asOf:string;generatedAt:string;history:Detail[];quoteAt?:[string|null,string|null];status?:{star?:string|null;etf?:string|null} };
+type Snapshot = { asOf:string;generatedAt:string;history:Detail[];quoteAt?:[string|null,string|null];status?:{star?:string|null;etf?:string|null};clientRecoveredAt?:string };
 type Result = { days: Day[]; quoteAt: (string|null)[]; source: string; checkedAt: string;
   snapshot:Snapshot|null; etf300:Map<string,number>|null };
 const wan = (yi: number) => (yi/10000).toFixed(2);
@@ -114,6 +115,50 @@ async function loadMarket(onSnapshot:(interim:Result)=>void):Promise<Result> {
   const etf300=latestDate===todayChina||!snapshotHas300
     ?await browserKline("sh510300").then(data=>data.amounts).catch(()=>null):null;
   return {days,quoteAt,source,checkedAt:new Date().toISOString(),snapshot,etf300};
+}
+
+function recoveryKey(date:string){return `ashare_verified_detail_${date}`}
+function storageGet(key:string){try{return localStorage.getItem(key)}catch{return null}}
+function storageSet(key:string,value:string){try{localStorage.setItem(key,value)}catch{/* Data still displays in this tab. */}}
+function cachedRecovery(result:Result):RecoveredDetail|null {
+  const day=result.days.at(-1);if(!day)return null;
+  try{
+    const value=JSON.parse(storageGet(recoveryKey(day.date))??'null') as RecoveredDetail|null;
+    if(!value||value.date!==day.date||Math.abs(value.sh-day.sh)>.02||
+      Math.abs(value.sz-day.sz)>.02||!Number.isFinite(Date.parse(value.checkedAt)))return null;
+    if(value.star!==undefined&&(!Number.isFinite(value.star)||value.star<=0||value.star>=day.sh*.9))return null;
+    if(value.etf!==undefined&&(!Number.isFinite(value.etf)||value.etf<=0||
+      !value.etfSh||!value.etfSz||Math.abs(value.etf-value.etfSh-value.etfSz)>.02||
+      !value.etfCount||value.etfCount<500))return null;
+    return value.star!==undefined||value.etf!==undefined?value:null;
+  }catch{return null}
+}
+function mergeRecovery(result:Result,recovered:RecoveredDetail):Result {
+  const day=result.days.at(-1);
+  if(!day||day.date!==recovered.date||Math.abs(day.sh-recovered.sh)>.02||
+    Math.abs(day.sz-recovered.sz)>.02)return result;
+  const base=result.snapshot;
+  const previous=base?.history.find(row=>row.date===day.date);
+  if(previous?.star!==undefined&&previous?.etf!==undefined)return result;
+  const row:Detail={...previous,date:day.date,sh:day.sh,sz:day.sz,
+    etf510300:result.etf300?.get(day.date)??previous?.etf510300??null};
+  if(previous?.star===undefined&&recovered.star!==undefined)
+    Object.assign(row,{star:recovered.star,starSource:recovered.starSource,
+      starCount:recovered.starCount,starActive:recovered.starActive,starCheckedAt:recovered.starCheckedAt});
+  if(previous?.etf===undefined&&recovered.etf!==undefined)
+    Object.assign(row,{etf:recovered.etf,etfSh:recovered.etfSh,etfSz:recovered.etfSz,
+      etfCount:recovered.etfCount,etfActive:recovered.etfActive,
+      etfSource:recovered.etfSource,etfCheckedAt:recovered.etfCheckedAt});
+  const history=[...(base?.history??[]).filter(item=>item.date!==day.date),row]
+    .sort((a,b)=>a.date.localeCompare(b.date)).slice(-300);
+  return {...result,snapshot:{...base,asOf:day.date,history,generatedAt:recovered.checkedAt,
+    clientRecoveredAt:recovered.checkedAt,quoteAt:result.quoteAt.slice(0,2) as [string|null,string|null]}};
+}
+function recoveryReady(result:Result):boolean {
+  const date=result.days.at(-1)?.date,now=new Date(Date.now()+8*3600_000).toISOString();
+  if(!date||date>now.slice(0,10)||now.slice(0,10)===date&&now.slice(11,16)<'15:25')return false;
+  return result.quoteAt.length===2&&result.quoteAt.every(stamp=>
+    !!stamp?.startsWith(date)&&stamp.slice(11)>='15:00');
 }
 
 function provisionalDate(result:Result):string|null {
@@ -316,6 +361,7 @@ export default function Home() {
   const [dailyQuoteIndex,setDailyQuoteIndex]=useState(0);
   const [shareOpen,setShareOpen]=useState(false);
   const [shareFeedback,setShareFeedback]=useState("");
+  const [detailStatus,setDetailStatus]=useState("");
   const shareDialog=useRef<HTMLElement>(null);
   const requestId=useRef(0);
   const inFlight=useRef(false);
@@ -324,7 +370,46 @@ export default function Home() {
     inFlight.current=true;
     const id=++requestId.current;
     setLoading(true);setError("");
-    try {const next=await loadMarket(interim=>{if(id===requestId.current)setResult(interim)});if(id===requestId.current)setResult(next);}
+    try {
+      const next=await loadMarket(interim=>{if(id===requestId.current)setResult(interim)});
+      const cached=cachedRecovery(next);
+      const shown=cached?mergeRecovery(next,cached):next;
+      if(id===requestId.current){setResult(shown);setLoading(false)}
+      const date=next.days.at(-1)?.date;
+      const existing=shown.snapshot?.history.find(row=>row.date===date);
+      const diagnostic=new URLSearchParams(window.location.search).has('checkDetail')&&
+        sessionStorage.getItem(`ashare_check_${date}`)!=='done';
+      const needStar=existing?.star===undefined||diagnostic;
+      const needEtf=existing?.etf===undefined||diagnostic;
+      if(!date||!recoveryReady(next))return;
+      if(!needStar&&!needEtf){if(id===requestId.current)setDetailStatus('');return}
+      const retryKey=`ashare_retry_${date}`;
+      if(!diagnostic&&Number(storageGet(retryKey)??0)>Date.now())return;
+      if(id===requestId.current)setDetailStatus('正在从行情源直连核验缺失的细分项…');
+      try{
+        const recovered=await recoverBrowserDetail(date,next.days.at(-1)!.sh,
+          next.days.at(-1)!.sz,next.etf300?.get(date)??existing?.etf510300??null,
+          needStar,needEtf);
+        if(diagnostic){
+          sessionStorage.setItem(`ashare_check_${date}`,'done');
+          const starOK=!needStar||recovered.star!==undefined&&
+            (existing?.star===undefined||Math.abs(existing.star-recovered.star)<Math.max(3,existing.star*.0075));
+          const etfOK=!needEtf||recovered.etf!==undefined&&
+            (existing?.etf===undefined||Math.abs(existing.etf-recovered.etf)<Math.max(3,existing.etf*.002));
+          if(id===requestId.current)setDetailStatus(starOK&&etfOK?
+            '直连自检与已发布快照一致。':'直连自检与快照存在差异，已保留原始快照供复核。');
+        }else{
+          const combined={...cached,...recovered};
+          storageSet(recoveryKey(date),JSON.stringify(combined));
+          storageSet(retryKey,String(Date.now()+15*60_000));
+          if(id===requestId.current){setResult(mergeRecovery(shown,combined));
+            setDetailStatus(combined.star!==undefined&&combined.etf!==undefined?'细分项已由当前浏览器补采；仓库快照稍后独立更新。':'部分细分项已补采，其余仍待核实并将稍后重试。')}
+        }
+      }catch{
+        storageSet(retryKey,String(Date.now()+15*60_000));
+        if(id===requestId.current)setDetailStatus('细分项直连补采暂不可用，保留“待核实”并稍后重试。');
+      }
+    }
     catch(e){if(id===requestId.current)setError(e instanceof Error?e.message:"行情读取失败");}
     finally{inFlight.current=false;if(id===requestId.current)setLoading(false);}
   },[]);
@@ -435,13 +520,14 @@ export default function Home() {
           {metric:"total",label:"沪深两市",value:latest?.total,note:"沪市＋深市"},
           {metric:"sh",label:"上证市场",value:latest?.sh,note:"包含科创板"},
           {metric:"sz",label:"深证市场",value:latest?.sz,note:"与沪市合计构成上方总额"},
-          {metric:"star",label:"科创板",value:latestDetail?.star,note:"上交所股票分类统计"},
+          {metric:"star",label:"科创板",value:latestDetail?.star,note:latestDetail?.starSource??"上交所股票分类统计"},
           {metric:"etf",label:"沪深 ETF",value:latestDetail?.etf,note:latestDetail?.etfCount?`已核对 ${latestDetail.etfCount.toLocaleString("zh-CN")} 只 · ${latestDetail.etfSource??"ETF 行情"}` :"ETF 明细全量汇总"},
           {metric:"etf510300",label:"510300",value:etf300??undefined,note:"沪深300ETF华泰柏瑞 · ETF 总额子集"}
         ].map((item,index)=><div className={`depth-row depth-${index}`} key={item.label}><div className="depth-name"><strong>{item.label}</strong><small>{item.note}</small></div>
           <div className="depth-data"><b>{item.value!==undefined&&item.value!==null?yi(item.value):"—"}</b><span>{item.value!==undefined&&item.value!==null?"亿元":"同日数据待核实"}</span><DataDownload result={result} metric={item.metric as MetricKey} iconOnly/></div>
           <div className="depth-bar"><span style={{width:`${latest&&item.value?Math.max(1,item.value/latest.total*100):0}%`}}/></div></div>)}</div>
-        {latest&&latestDetail?.star===undefined&&<p className="fine">科创板：上交所尚未返回该交易日可核验的分类成交额，已安排收盘后补采；不会用科创综指等不同口径数据代填。</p>}
+        {detailStatus&&<p className="fine" role="status">{detailStatus}</p>}
+        {latest&&latestDetail?.star===undefined&&<p className="fine">科创板：同日可核验的分类成交额暂缺；正在通过定时任务与浏览器直连补采，不使用科创综指等不同口径代填。</p>}
         {latestDetail?.etfSh!==undefined&&latestDetail?.etfSz!==undefined&&<p className="fine etf-breakdown">ETF 分市场：沪市 {yi(latestDetail.etfSh)} 亿元 <DataDownload result={result} metric="etfSh" iconOnly/>＋深市 {yi(latestDetail.etfSz)} 亿元 <DataDownload result={result} metric="etfSz" iconOnly/>；核对于 {latestDetail.etfCheckedAt?new Date(latestDetail.etfCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"未知"}（北京时间）。</p>}
         <p className="fine">细分项与上层市场之间存在包含关系，不应直接相加。ETF 为沪深场内 ETF 成交额，不等同全部基金；510300 已计入 ETF。科创板最近核对：{latestDetail?.starCheckedAt?new Date(latestDetail.starCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"待核实"}；来源：{latestDetail?.starSource??"待核实"}。</p>
       </section>
@@ -465,7 +551,7 @@ export default function Home() {
         <div className="indicator-reference"><strong>层级与作用</strong><p>沪深合计：全市场成交活跃度；上证、深证：观察两地市场分布；科创板：观察沪市科技板块；沪深 ETF：观察交易所基金；510300：观察单只宽基 ETF。20 日累计：观察中期总量；20 日平均：作为当日比较基准；资金温度：当日成交额相对基准的倍数。</p></div>
       </section>
       <section className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h2>近期交易日</h2><p className="history-unit">沪、深、合计、20 日累计：万亿元；科创、ETF、510300、20 日平均：亿元；资金温度：表格用倍，手机卡片用百分比</p></div><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button></div><div className="table-wrap"><HistoryTableHead result={result}/>{days.slice(-10).reverse().map(d=>{const extra=result?.snapshot?.history.find(item=>item.date===d.date),single=result?.etf300?.get(d.date)??extra?.etf510300;return <div className="table-row" key={d.date}><span>{d.date}{d.date===provisional?" · 盘中":""}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{extra?.star!==undefined?yi(extra.star):"—"}</span><span>{extra?.etf!==undefined?yi(extra.etf):"—"}</span><span>{single!=null?yi(single):"—"}</span><span>{d.date===provisional||d.roll20===undefined?"—":wan(d.roll20)}</span><span>{d.date===provisional||d.avg20===undefined?"—":yi(d.avg20)}</span><span>{d.date===provisional||d.heat===undefined?"—":d.heat.toFixed(2)}</span></div>})}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div><MobileHistory days={days} result={result} provisional={provisional}/><p className="fine">导出 CSV 保留底层“亿元”数值，细分市场历史仅包含已核实日期；盘中行会标记“盘中暂计”，其滚动值和温度留空。</p></section>
-      <footer><p><strong>数据口径</strong> 页面中的“量”统一指成交额，不是成交股数或 ETF 份数。腾讯行情上证指数与深证成指的沪、深市场成交额由万元换算为亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日累计由连续 20 个共同交易日计算，20 日均量＝累计额 ÷ 20，资金温度＝当日沪深合计 ÷ 20 日均量。</p><p><strong>更新与核对</strong> 页面打开时，北京时间 12:00、15:15、15:55、16:55、17:55、18:55 定点刷新，在北京时间工作日 09:15—16:30 的可变时段每 2 分钟核对；重新打开页面也会立即读取。科创板、ETF 的数据由仓库工作流于交易日午间与收盘后的多个错峰时点抓取，服务延迟或节假日时以数据日期为准；无同日合格数据时显示“待核实”。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}{result?.snapshot&&` 细分项快照 ${new Date(result.snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a> · <a href="https://gu.qq.com/sh510300" target="_blank" rel="noreferrer">腾讯财经·510300</a> · <a href="https://www.sse.com.cn/market/stockdata/overview/day/" target="_blank" rel="noreferrer">上交所·股票成交概况</a> · <a href="https://qt.gtimg.cn/q=sh510300" target="_blank" rel="noreferrer">腾讯财经·ETF 报价</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer>
+      <footer><p><strong>数据口径</strong> 页面中的“量”统一指成交额，不是成交股数或 ETF 份数。腾讯行情上证指数与深证成指的沪、深市场成交额由万元换算为亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日累计由连续 20 个共同交易日计算，20 日均量＝累计额 ÷ 20，资金温度＝当日沪深合计 ÷ 20 日均量。</p><p><strong>更新与核对</strong> 页面打开时，北京时间 12:00、15:15、15:55、16:55、17:55、18:55 定点刷新，在北京时间工作日 09:15—16:30 的可变时段每 2 分钟核对；重新打开页面也会立即读取。科创板、ETF 的数据由仓库工作流于交易日午间与收盘后的多个错峰时点抓取，若工作流漏采，收盘后浏览器会按完整代码范围直连补采，并检查日期、金额与覆盖数量；补采结果仅在当前浏览器保存，仓库快照仍须由工作流提交。无同日合格数据时显示“待核实”。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}{result?.snapshot&&` ${result.snapshot.clientRecoveredAt?"浏览器细分项补采":"细分项仓库快照"} ${new Date(result.snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a> · <a href="https://gu.qq.com/sh510300" target="_blank" rel="noreferrer">腾讯财经·510300</a> · <a href="https://www.sse.com.cn/market/stockdata/overview/day/" target="_blank" rel="noreferrer">上交所·股票成交概况</a> · <a href="https://qt.gtimg.cn/q=sh510300" target="_blank" rel="noreferrer">腾讯财经·ETF 报价</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer>
       <section className="quote-library" aria-label="投资观点库导出"><div><strong>投资观点库</strong><span>逐条附有作者、原始出处和定位；页面按北京时间每日轮换。</span></div><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>导出观点库 CSV（{investorQuotes.length} 条）</button></section>
     </div>
   </main>;

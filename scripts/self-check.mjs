@@ -5,6 +5,7 @@ import {parseTencent,composeDays} from '../lib/market.ts';
 import {isCloseConfirmed,nextScheduledRefresh} from '../lib/refreshSchedule.ts';
 import {alignedQuoteDates,unchangedClosedSession,alreadyVerifiedClose} from './market-session.mjs';
 import {parseEastmoneyStar,parseTencentStarBatches,starFallback} from './star-fallback.mjs';
+import {summarizeStar,summarizeEtf} from '../lib/browserDetail.ts';
 
 const bars=Array.from({length:21},(_,i)=>{
   const date=new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10);
@@ -32,9 +33,15 @@ assert.equal(nextScheduledRefresh(Date.parse('2026-09-28T09:55:00Z')),60*60_000)
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-28 15:00'],Date.parse('2026-09-28T07:14:00Z')),false);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-28 15:00'],Date.parse('2026-09-28T07:15:00Z')),true);
 assert.equal(isCloseConfirmed('2026-09-28',['2026-09-28 15:00','2026-09-24 16:14'],Date.parse('2026-09-28T07:15:00Z')),false);
-const prior={asOf:'2026-09-24',history:[{date:'2026-09-24',sh:7836.13,sz:8697.44}]};
+const prior={asOf:'2026-09-24',generatedAt:'2026-09-24T08:15:00Z',
+  quoteAt:['2026-09-24 16:14','2026-09-24 16:14'],
+  history:[{date:'2026-09-24',sh:7836.13,sz:8697.44,
+  star:2457.81,starSource:'上海证券交易所分类成交',etf:4786.46,
+  etfSource:'腾讯财经全代码段报价',etfCount:1500}]};
 assert.equal(unchangedClosedSession('2026-09-24','2026-09-28',prior,7836.13,8697.44),true);
 assert.equal(unchangedClosedSession('2026-09-24','2026-09-28',prior,7836.13,8698),false);
+assert.equal(unchangedClosedSession('2026-09-24','2026-09-28',
+  {...prior,history:[{...prior.history[0],star:undefined}]},7836.13,8697.44),false);
 assert.equal(unchangedClosedSession('2026-09-28','2026-09-28',prior,1,1),false);
 const verified={asOf:'2026-09-29',generatedAt:'2026-09-29T09:20:00Z',
   quoteAt:['2026-09-29 15:15','2026-09-29 15:15'],history:[{date:'2026-09-29',sh:1,sz:2,
@@ -69,4 +76,24 @@ const backup=await starFallback('2026-09-28',7000,async url=>{
 });
 assert.equal(backup.amount,1230);
 assert.equal(firstBatchAttempts,2);
+const browserQuote=(code,kind='ETF')=>{const fields=Array(62).fill('');
+  fields[1]='测试证券';fields[2]=code.slice(2);fields[30]='20260929151500';
+  fields[35]='0/0/200000000';fields[57]='20000';fields[61]=kind;
+  return fields.join('~');};
+const starSymbols=[...Array.from({length:614},(_,i)=>`sh688${String(i).padStart(3,'0')}`),'sh688981'];
+const starQuotes=new Map(starSymbols.map(symbol=>[symbol,browserQuote(symbol,'GP-A')]));
+assert.equal(summarizeStar([{requested:starSymbols,quotes:starQuotes}], '2026-09-29',7000).star,1230);
+assert.throws(()=>summarizeStar([{requested:starSymbols,quotes:new Map([...starQuotes].filter(([symbol])=>symbol!=='sh688981'))}],
+  '2026-09-29',7000),/不完整/);
+const etfSymbols=[...Array.from({length:10000},(_,i)=>`sh${500000+i*10}`),
+  ...Array.from({length:2000},(_,i)=>`sz${158000+i}`)];
+const etfQuotes=new Map([['sh510300',browserQuote('sh510300')],
+  ...etfSymbols.slice(0,350).map(symbol=>[symbol,browserQuote(symbol)]),
+  ...etfSymbols.slice(-250).map(symbol=>[symbol,browserQuote(symbol)])]);
+const recoveredEtf=summarizeEtf([{requested:etfSymbols,quotes:etfQuotes}], '2026-09-29',20);
+assert.equal(recoveredEtf.etfCount,601);
+assert.equal(Math.round(recoveredEtf.etf),1202);
+assert.throws(()=>summarizeEtf([{requested:etfSymbols.slice(1),quotes:etfQuotes}], '2026-09-29',20),/覆盖/);
+const mismatched=new Map(etfQuotes);mismatched.set('sh500000',browserQuote('sh500000').replace('200000000','100000000'));
+assert.throws(()=>summarizeEtf([{requested:etfSymbols,quotes:mismatched}], '2026-09-29',20),/交叉核对/);
 console.log('self-check: Tencent amount/date, mismatched close, rolling20, Beijing schedule, stale-session skip and quote alignment');

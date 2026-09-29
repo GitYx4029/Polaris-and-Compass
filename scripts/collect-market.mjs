@@ -198,7 +198,7 @@ try{
   const previous=prior.history?.find(row=>row.date===specialDate);
   // Later close retries need the missing exchange value; reuse a fully closed
   // ETF scan when both market totals are unchanged instead of scanning 12k codes.
-  const closedAndUnchanged=beijingClock>='15:40'&&prior.asOf===specialDate&&
+  const closedAndUnchanged=(specialDate<beijing||beijingClock>='15:40')&&prior.asOf===specialDate&&
     previous?.sh===sh.amounts.get(specialDate)&&previous?.sz===sz.amounts.get(specialDate)&&
     prior.quoteAt?.every(stamp=>stamp?.startsWith(specialDate)&&stamp.slice(11)>='15:15');
   const value=closedAndUnchanged&&previous?.etfSource==='腾讯财经全代码段报价'&&
