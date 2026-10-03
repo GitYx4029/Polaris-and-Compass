@@ -36,3 +36,15 @@ npm run dev
 ## 漏采恢复
 
 GitHub Actions 的 `schedule` 可能延迟或不触发。网页在完整收盘行情已确认、当日科创板或 ETF 快照缺失时，直接通过腾讯逐只报价脚本遍历科创板 688/689 及沪深 ETF 全代码段，按日期、代码、金额双字段、完整覆盖数量与沪深分项核验；只有通过校验的数值才显示，且明确标记“浏览器补采”。浏览器的科创板逐只报价为竞价口径参考值，可能与包含其他交易方式的上交所分类终值略有差异；官方快照恢复后优先使用交易所分类结果。已补采结果缓存于当前浏览器，快照恢复后以仓库核验数据为准。若行情接口不可达，保留“待核实”并延时重试。仓库采集器也会继续补齐前一交易日缺失的科创板或 ETF 数据。`?checkDetail=1` 可在已核验日期执行一次逐只重算并比较快照，作为不修改数据的现场诊断。浏览器临时补采不替代仓库历史归档，若 GitHub 调度持续失效，跨日 ETF 历史仍需独立调度服务。
+
+## 独立定时器（Cloudflare 免费方案，待账号部署）
+
+`scheduler/worker.mjs` 使用 Cloudflare Cron Trigger 作为 GitHub `schedule` 之外的时钟；原有 `workflow_dispatch` 工作流仍负责采集、校验、提交与发布。定时器北京时间工作日 12:41、15:41、16:11、16:41、17:11、17:41、18:11、18:41 检查仓库快照；午间已更新或收盘后两市报价、上交所科创板分类成交、ETF 全代码段及分市场核对均完成时跳过，否则触发工作流。请求被 GitHub 接受不等于采集成功，下一个时点会再检查快照并重试。休市工作日可能触发空跑，采集器会根据行情日期退出。密钥只存 Cloudflare Secret，不提交到仓库；凭证失效或服务故障需查看 Cloudflare 运行日志并轮换。
+
+部署需仓库所有者完成以下账号操作（不要把令牌发在聊天中）：
+
+1. 注册或登录 Cloudflare 免费账号；在 GitHub `Settings → Developer settings → Personal access tokens → Fine-grained tokens` 创建仅授权 `GitYx4029/Polaris-and-Compass` 的令牌，仓库权限 `Actions: Read and write`，记录到期时间。
+2. 在仓库根目录执行 `npx wrangler login`，然后执行 `npx wrangler secret put GITHUB_ACTIONS_TOKEN --config scheduler/wrangler.jsonc`，在本机提示符输入令牌；再执行 `npx wrangler deploy --config scheduler/wrangler.jsonc`。令牌不要写入命令、文件或公开日志。
+3. 在 Cloudflare Workers 的 `polaris-market-watchdog → Triggers` 确认三条 UTC Cron；在 `Logs` 查看第一次定时运行结果 `verified` 或 `dispatched`。当工作流被触发时，到 GitHub Actions 确认 `Collect verified market snapshot` 成功，并在页面核对数据日期。密钥到期前需在 GitHub 轮换并重新执行 `wrangler secret put`。
+
+本地无需行情 API 的检查：`node scheduler/self-check.mjs`。定时器只负责触发 GitHub 工作流，若 GitHub Actions 本身整日不可用，历史归档仍无法完成。
