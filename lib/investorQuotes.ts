@@ -357,6 +357,29 @@ export const investorQuotes: InvestorQuote[] = [
     author:"霍华德·马克斯",text,source:`橡树资本《${memo==="debt"?"The Impact of Debt":"Easy Money"}》`,locator,url:`https://www.oaktreecapital.com/insights/memo/${memo==="debt"?"the-impact-of-debt":"easy-money"}`}))
 ];
 
+// 120 cited entries about compounding, patience, market psychology and
+// investing discipline. Preserve the complete 301-entry export unchanged.
+const investingFocusIds = new Set([
+  2,4,11,14,15,19,20,22,24,26,27,36,37,38,39,41,42,47,49,57,
+  59,63,64,65,68,69,80,82,85,89,90,91,92,95,97,99,100,113,114,120,
+  125,132,133,136,138,139,141,142,145,146,153,156,157,158,159,163,164,
+  170,177,181,183,189,191,192,193,197,198,205,206,208,211,214,216,
+  218,220,222,232,235,237,238,243,244,245,250,252,256,257,262,264,
+  266,269,270,277,278,279,283,285,
+  1,3,7,10,18,28,29,30,31,43,45,46,48,54,60,61,62,74,76,96,104,
+  106,108
+]);
+const quoteOrder=(id:number)=>(id*73)%307;
+const focusedIndices=investorQuotes.map((q,i)=>investingFocusIds.has(q.id)?i:-1)
+  .filter(i=>i>=0).sort((a,b)=>quoteOrder(investorQuotes[a].id)-quoteOrder(investorQuotes[b].id));
+const otherIndices=investorQuotes.map((q,i)=>investingFocusIds.has(q.id)?-1:i)
+  .filter(i=>i>=0).sort((a,b)=>quoteOrder(investorQuotes[a].id)-quoteOrder(investorQuotes[b].id));
+
 export function quoteIndexAt(timestampMs: number): number {
-  return Math.floor((timestampMs + 8 * 60 * 60 * 1000) / 86_400_000) % investorQuotes.length;
+  const day=Math.floor((timestampMs+8*60*60*1000)/86_400_000);
+  const cycle=Math.floor(day/5),position=day%5;
+  // Two days in each five-day block feature an investing-focused line.
+  if(position===0||position===3)
+    return focusedIndices[(cycle*2+(position===3?1:0))%focusedIndices.length];
+  return otherIndices[(cycle*3+(position===4?2:position-1))%otherIndices.length];
 }

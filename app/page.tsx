@@ -22,6 +22,23 @@ const tiers = [
   { text: "≥ 2.0", name: "多板块行情", note:"观察是否出现多个板块的行情" }
 ];
 const tier = (v: number) => v < 1.3 ? 0 : v < 1.5 ? 1 : v < 1.8 ? 2 : v < 2 ? 3 : 4;
+function relativeMark(current?:number|null,previous?:number|null,comparable=true):string|null {
+  if(!comparable||current==null||previous==null||current<=0||previous<=0)return null;
+  const change=(current/previous-1)*100;
+  return Math.abs(change)<.05?"较前交易日持平":`较前交易日 ${change>0?"+":""}${change.toFixed(1)}%`;
+}
+function rollingMark(value?:number):string|null {
+  if(value===undefined)return null;
+  const wanValue=value/10000;
+  return wanValue>=55&&wanValue<=60?"北极星参考 · 利润开始撤走":
+    wanValue>=110&&wanValue<=115?"北极星参考 · 全部撤走":null;
+}
+function heatMark(value?:number):string|null {
+  if(value===undefined)return null;
+  const percent=value*100;
+  return percent<85?"温度参考 · 地量":percent<=105?"温度参考 · 正常":
+    percent>110&&percent<140?"温度参考 · 过热":percent>=140?"温度参考 · 太热":null;
+}
 const historyUrl = "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get";
 
 // Tencent provides a JavaScript assignment (_var=...), so the browser can read
@@ -476,10 +493,15 @@ export default function Home() {
   const provisional=currentDay&&!closeConfirmed?today:null;
   const complete=provisional?prev:latest;
   const completePrev=provisional?days.at(-3):prev;
+  const prevDetail=result?.snapshot?.history.find(item=>item.date===prev?.date);
   const currentTier=complete?tier(complete.total/10000):null;
   const delta=!provisional&&latest&&prev?(latest.total/prev.total-1)*100:null;
   const heat=!provisional?latest?.heat:undefined;
   const phase=waitingClose?"收盘数据待更新":waitingNoon?"午间数据待更新":intraday&&clock>="12:00"&&clock<"13:00"?"午间累计":intraday?"盘中累计":"收盘";
+  const comparable=!provisional&&!!prev;
+  const detailComparable=comparable&&latestDetail?.starSource===prevDetail?.starSource;
+  const etfComparable=comparable&&latestDetail?.etfSource===prevDetail?.etfSource;
+  const prevEtf300=prev?(result?.etf300?.get(prev.date)??prevDetail?.etf510300):undefined;
   const dailyQuote=investorQuotes[dailyQuoteIndex];
   const shareData:ShareDatum[]=[
     {label:"沪深两市成交额",value:latest?`${wan(latest.total)} 万亿元`:"待核实",note:provisional?"盘中暂计":undefined},
@@ -514,28 +536,29 @@ export default function Home() {
       {!provisional&&latest&&prev&&tier(prev.total/10000)!==currentTier&&<div className="notice" role="status">最近交易日成交额进入 <strong>{tiers[currentTier!].text} 万亿</strong> 区间，<a href="#guide-daily">查看指南针解读参考</a>。</div>}
       <div className="section-kicker">01 / 全市场 · 当日与基准</div>
       <div className="metrics overview-metrics">
-        <article className="metric primary"><div className="metric-title">沪深两市成交额 <small>{provisional?"盘中暂计":"单日"} · 万亿元</small></div><div className="big">{latest?wan(latest.total):"—"}<span>万亿</span></div><div className="under"><span>{provisional?"收盘后计算日变化":delta===null?"等待完整数据":`较上日 ${delta>=0?"+":""}${delta.toFixed(1)}%`}</span><a href="#guide-daily">指南针 · 解读参考</a></div><div className="metric-actions"><DataDownload result={result} metric="total"/></div><div className="split"><span>上证市场 <b>{latest?yi(latest.sh):"—"} 亿</b><DataDownload result={result} metric="sh" iconOnly/></span><span>深证市场 <b>{latest?yi(latest.sz):"—"} 亿</b><DataDownload result={result} metric="sz" iconOnly/></span></div></article>
-        <article className="metric compact temperature-metric"><div className="metric-title">资金温度计 <small>当日 ÷ 20 日均量</small></div><div className="compact-number">{heat!==undefined?(heat*100).toFixed(1):"—"}<span>% · {heat!==undefined?heat.toFixed(2):"—"} 倍</span></div><div className="heat-track"><span style={{width:`${Math.min(100,(heat??0)/2*100)}%`}}/></div><p className="fine">{provisional?"盘中成交额尚未完整，收盘核实后计算资金温度。":"1.00 倍为近 20 个交易日平均水平；仅衡量成交活跃度，不表示资金净流入。"}</p><div className="metric-actions"><DataDownload result={result} metric="heat"/><a href="#guide-heat">资金温度 · 解读参考</a></div></article>
+        <article className="metric primary"><div className="metric-title">沪深两市成交额 <small>{provisional?"盘中暂计":"单日"} · 万亿元</small></div><div className="big">{latest?wan(latest.total):"—"}<span>万亿</span></div><div className="under"><span>{provisional?"收盘后计算日变化":delta===null?"等待完整数据":`较上日 ${delta>=0?"+":""}${delta.toFixed(1)}%`}</span><a href="#guide-daily">指南针 · 解读参考</a></div>{!provisional&&currentTier!==null&&<a className="metric-mark" href="#guide-daily">本交易日 · {tiers[currentTier].name}</a>}<div className="metric-actions"><DataDownload result={result} metric="total"/></div><div className="split"><span>上证市场 <b>{latest?yi(latest.sh):"—"} 亿</b><DataDownload result={result} metric="sh" iconOnly/></span><span>深证市场 <b>{latest?yi(latest.sz):"—"} 亿</b><DataDownload result={result} metric="sz" iconOnly/></span></div></article>
+        <article className="metric compact temperature-metric"><div className="metric-title">资金温度计 <small>当日 ÷ 20 日均量</small></div><div className="compact-number">{heat!==undefined?(heat*100).toFixed(1):"—"}<span>% · {heat!==undefined?heat.toFixed(2):"—"} 倍</span></div><div className="heat-track"><span style={{width:`${Math.min(100,(heat??0)/2*100)}%`}}/></div>{heatMark(heat)&&<a className="metric-mark" href="#guide-heat">{heatMark(heat)}</a>}<p className="fine">{provisional?"盘中成交额尚未完整，收盘核实后计算资金温度。":"1.00 倍为近 20 个交易日平均水平；仅衡量成交活跃度，不表示资金净流入。"}</p><div className="metric-actions"><DataDownload result={result} metric="heat"/><a href="#guide-heat">资金温度 · 解读参考</a></div></article>
       </div>
-      <section className="panel rolling-summary"><div className="rolling-head"><div className="rolling-stat"><p className="eyebrow">20-DAY ROLLING / 北极星</p><h2>近 20 个交易日累计成交额</h2><div className="big">{complete?.roll20!==undefined?wan(complete.roll20):"—"}<span>万亿</span></div><p className="fine">{provisional&&complete?`截至上一完整交易日 ${complete.date}；盘中暂不计入`:complete?.roll20!==undefined&&completePrev?.roll20!==undefined?`较上一交易日 ${((complete.roll20/completePrev.roll20-1)*100).toFixed(1)}%`:"累计 20 个完整交易日后显示"}</p><div className="metric-actions"><DataDownload result={result} metric="roll20"/><a href="#guide-rolling">北极星 · 解读参考</a></div></div><div className="rolling-stat average-stat"><p className="eyebrow">20-DAY BASELINE</p><h2>20 日平均成交额</h2><div className="compact-number">{complete?.avg20!==undefined?yi(complete.avg20):"—"}<span>亿元 / 交易日</span></div><p className="fine">基准量＝近 20 个完整交易日累计额 ÷ 20</p><div className="metric-actions"><DataDownload result={result} metric="avg20"/></div></div></div><div className="rolling-chart-heading"><h3>滚动累计趋势</h3><span>悬停查看具体日期、均量和资金温度</span></div><Chart data={provisional?days.slice(0,-1):days}/><p className="fine">每一点为该日及之前 19 个完整交易日的成交额合计；图中参考线对应北极星的滚动累计区间。</p></section>
+      <section className="panel rolling-summary"><div className="rolling-head"><div className="rolling-stat"><p className="eyebrow">20-DAY ROLLING / 北极星</p><h2>近 20 个交易日累计成交额</h2><div className="big">{complete?.roll20!==undefined?wan(complete.roll20):"—"}<span>万亿</span></div>{!provisional&&rollingMark(complete?.roll20)&&<a className="metric-mark" href="#guide-rolling">{rollingMark(complete?.roll20)}</a>}<p className="fine">{provisional&&complete?`截至上一完整交易日 ${complete.date}；盘中暂不计入`:complete?.roll20!==undefined&&completePrev?.roll20!==undefined?`较上一交易日 ${((complete.roll20/completePrev.roll20-1)*100).toFixed(1)}%`:"累计 20 个完整交易日后显示"}</p><div className="metric-actions"><DataDownload result={result} metric="roll20"/><a href="#guide-rolling">北极星 · 解读参考</a></div></div><div className="rolling-stat average-stat"><p className="eyebrow">20-DAY BASELINE</p><h2>20 日平均成交额</h2><div className="compact-number">{complete?.avg20!==undefined?yi(complete.avg20):"—"}<span>亿元 / 交易日</span></div>{relativeMark(complete?.avg20,completePrev?.avg20,!provisional)&&<span className="metric-mark neutral">{relativeMark(complete?.avg20,completePrev?.avg20)}</span>}<p className="fine">基准量＝近 20 个完整交易日累计额 ÷ 20</p><div className="metric-actions"><DataDownload result={result} metric="avg20"/></div></div></div><div className="rolling-chart-heading"><h3>滚动累计趋势</h3><span>悬停查看具体日期、均量和资金温度</span></div><Chart data={provisional?days.slice(0,-1):days}/><p className="fine">每一点为该日及之前 19 个完整交易日的成交额合计；图中参考线对应北极星的滚动累计区间。</p></section>
       <div className="section-kicker">02 / 市场与产品 · 按覆盖范围</div>
       <section className="panel market-depth"><div className="panel-header"><div><p className="eyebrow">MARKET DEPTH / DAILY</p><h2>市场层级成交额</h2></div><span>{latest?.date??"等待数据"} · 单位：亿元</span></div>
         <div className="depth-list">{[
-          {metric:"total",label:"沪深两市",value:latest?.total,note:"沪市＋深市"},
-          {metric:"sh",label:"上证市场",value:latest?.sh,note:"包含科创板"},
-          {metric:"sz",label:"深证市场",value:latest?.sz,note:"与沪市合计构成上方总额"},
-          {metric:"star",label:"科创板",value:latestDetail?.star,note:latestDetail?.starSource??"上交所股票分类统计"},
-          {metric:"etf",label:"沪深 ETF",value:latestDetail?.etf,note:latestDetail?.etfCount?`已核对 ${latestDetail.etfCount.toLocaleString("zh-CN")} 只 · ${latestDetail.etfSource??"ETF 行情"}` :"ETF 明细全量汇总"},
-          {metric:"etf510300",label:"510300",value:etf300??undefined,note:"沪深300ETF华泰柏瑞 · ETF 总额子集"}
-        ].map((item,index)=><div className={`depth-row depth-${index}`} key={item.label}><div className="depth-name"><strong>{item.label}</strong><small>{item.note}</small></div>
+          {metric:"total",label:"沪深两市",value:latest?.total,note:"沪市＋深市",mark:relativeMark(latest?.total,prev?.total,comparable)},
+          {metric:"sh",label:"上证市场",value:latest?.sh,note:"包含科创板",mark:relativeMark(latest?.sh,prev?.sh,comparable)},
+          {metric:"sz",label:"深证市场",value:latest?.sz,note:"与沪市合计构成上方总额",mark:relativeMark(latest?.sz,prev?.sz,comparable)},
+          {metric:"star",label:"科创板",value:latestDetail?.star,note:latestDetail?.starSource??"上交所股票分类统计",mark:relativeMark(latestDetail?.star,prevDetail?.star,detailComparable)},
+          {metric:"etf",label:"沪深 ETF",value:latestDetail?.etf,note:latestDetail?.etfCount?`已核对 ${latestDetail.etfCount.toLocaleString("zh-CN")} 只 · ${latestDetail.etfSource??"ETF 行情"}` :"ETF 明细全量汇总",mark:relativeMark(latestDetail?.etf,prevDetail?.etf,etfComparable)},
+          {metric:"etf510300",label:"510300",value:etf300??undefined,note:"沪深300ETF华泰柏瑞 · ETF 总额子集",mark:relativeMark(etf300,prevEtf300,comparable)}
+        ].map((item,index)=><div className={`depth-row depth-${index}`} key={item.label}><div className="depth-name"><div className="depth-heading"><strong>{item.label}</strong>{item.mark&&<span className="metric-mark neutral">{item.mark}</span>}</div><small>{item.note}</small></div>
           <div className="depth-data"><b>{item.value!==undefined&&item.value!==null?yi(item.value):"—"}</b><span>{item.value!==undefined&&item.value!==null?"亿元":"同日数据待核实"}</span><DataDownload result={result} metric={item.metric as MetricKey} iconOnly/></div>
           <div className="depth-bar"><span style={{width:`${latest&&item.value?Math.max(1,item.value/latest.total*100):0}%`}}/></div></div>)}</div>
         {detailStatus&&<p className="fine" role="status">{detailStatus}</p>}
         {latest&&latestDetail?.star===undefined&&<p className="fine">科创板：同日可核验的分类成交额暂缺；正在通过定时任务与浏览器直连补采，不使用科创综指等不同口径代填。</p>}
-        {latestDetail?.etfSh!==undefined&&latestDetail?.etfSz!==undefined&&<p className="fine etf-breakdown">ETF 分市场：沪市 {yi(latestDetail.etfSh)} 亿元 <DataDownload result={result} metric="etfSh" iconOnly/>＋深市 {yi(latestDetail.etfSz)} 亿元 <DataDownload result={result} metric="etfSz" iconOnly/>；核对于 {latestDetail.etfCheckedAt?new Date(latestDetail.etfCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"未知"}（北京时间）。</p>}
+        {latestDetail?.etfSh!==undefined&&latestDetail?.etfSz!==undefined&&<p className="fine etf-breakdown">ETF 分市场：沪市 {yi(latestDetail.etfSh)} 亿元 <DataDownload result={result} metric="etfSh" iconOnly/>{relativeMark(latestDetail.etfSh,prevDetail?.etfSh,etfComparable)&&<span className="metric-mark neutral">{relativeMark(latestDetail.etfSh,prevDetail?.etfSh)}</span>}＋深市 {yi(latestDetail.etfSz)} 亿元 <DataDownload result={result} metric="etfSz" iconOnly/>{relativeMark(latestDetail.etfSz,prevDetail?.etfSz,etfComparable)&&<span className="metric-mark neutral">{relativeMark(latestDetail.etfSz,prevDetail?.etfSz)}</span>}；核对于 {latestDetail.etfCheckedAt?new Date(latestDetail.etfCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"未知"}（北京时间）。</p>}
         <p className="fine">细分项与上层市场之间存在包含关系，不应直接相加。ETF 为沪深场内 ETF 成交额，不等同全部基金；510300 已计入 ETF。科创板最近核对：{latestDetail?.starCheckedAt?new Date(latestDetail.starCheckedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"}):"待核实"}；来源：{latestDetail?.starSource??"待核实"}。</p>
       </section>
       <MarketChart days={days} result={result} provisional={provisional}/>
+      <section className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h2>近期交易日</h2><p className="history-unit">沪、深、合计、20 日累计：万亿元；科创、ETF、510300、20 日平均：亿元；资金温度：表格用倍，手机卡片用百分比</p></div><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button></div><div className="table-wrap"><HistoryTableHead result={result}/>{days.slice(-10).reverse().map(d=>{const extra=result?.snapshot?.history.find(item=>item.date===d.date),single=result?.etf300?.get(d.date)??extra?.etf510300;return <div className="table-row" key={d.date}><span>{d.date}{d.date===provisional?" · 盘中":""}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{extra?.star!==undefined?yi(extra.star):"—"}</span><span>{extra?.etf!==undefined?yi(extra.etf):"—"}</span><span>{single!=null?yi(single):"—"}</span><span>{d.date===provisional||d.roll20===undefined?"—":wan(d.roll20)}</span><span>{d.date===provisional||d.avg20===undefined?"—":yi(d.avg20)}</span><span>{d.date===provisional||d.heat===undefined?"—":d.heat.toFixed(2)}</span></div>})}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div><MobileHistory days={days} result={result} provisional={provisional}/><p className="fine">导出 CSV 保留底层“亿元”数值，细分市场历史仅包含已核实日期；盘中行会标记“盘中暂计”，其滚动值和温度留空。</p></section>
       <section className="panel guide" id="reference"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST / 解读参考</p><h2>指标、阈值与观察含义</h2></div><span>按对应数据口径分区</span></div>
         <p className="reference-credit">本页观察工具箱来自“袁莹投资思维”；以下阈值用于标注原有观察规则，实际数据由行情与交易所来源核对。</p>
         <p className="guide-swipe-hint">左右滑动查看三项解读参考 →</p><div className="guide-groups" aria-label="指南针、北极星和资金温度计解读参考">
@@ -553,10 +576,9 @@ export default function Home() {
         </div>
         <p className="fine guide-disclaimer">以上解读是用户设定的观察规则，数字由真实成交额计算；阈值及对应操作未经过策略验证，不构成投资建议。</p>
         <div className="indicator-reference"><strong>层级与作用</strong><p>沪深合计：全市场成交活跃度；上证、深证：观察两地市场分布；科创板：观察沪市科技板块；沪深 ETF：观察交易所基金；510300：观察单只宽基 ETF。20 日累计：观察中期总量；20 日平均：作为当日比较基准；资金温度：当日成交额相对基准的倍数。</p></div>
-      </section>
-      <section className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h2>近期交易日</h2><p className="history-unit">沪、深、合计、20 日累计：万亿元；科创、ETF、510300、20 日平均：亿元；资金温度：表格用倍，手机卡片用百分比</p></div><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button></div><div className="table-wrap"><HistoryTableHead result={result}/>{days.slice(-10).reverse().map(d=>{const extra=result?.snapshot?.history.find(item=>item.date===d.date),single=result?.etf300?.get(d.date)??extra?.etf510300;return <div className="table-row" key={d.date}><span>{d.date}{d.date===provisional?" · 盘中":""}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{extra?.star!==undefined?yi(extra.star):"—"}</span><span>{extra?.etf!==undefined?yi(extra.etf):"—"}</span><span>{single!=null?yi(single):"—"}</span><span>{d.date===provisional||d.roll20===undefined?"—":wan(d.roll20)}</span><span>{d.date===provisional||d.avg20===undefined?"—":yi(d.avg20)}</span><span>{d.date===provisional||d.heat===undefined?"—":d.heat.toFixed(2)}</span></div>})}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div><MobileHistory days={days} result={result} provisional={provisional}/><p className="fine">导出 CSV 保留底层“亿元”数值，细分市场历史仅包含已核实日期；盘中行会标记“盘中暂计”，其滚动值和温度留空。</p></section>
       <footer><p><strong>数据口径</strong> 页面中的“量”统一指成交额，不是成交股数或 ETF 份数。腾讯行情上证指数与深证成指的沪、深市场成交额由万元换算为亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日累计由连续 20 个共同交易日计算，20 日均量＝累计额 ÷ 20，资金温度＝当日沪深合计 ÷ 20 日均量。</p><p><strong>更新与核对</strong> 页面打开时，北京时间 12:00、15:15、15:55、16:55、17:55、18:55 定点刷新，在北京时间工作日 09:15—16:30 的可变时段每 2 分钟核对；重新打开页面也会立即读取。科创板、ETF 的数据由仓库工作流于交易日午间与收盘后的多个错峰时点抓取，若工作流漏采，收盘后浏览器会按完整代码范围直连补采，并检查日期、金额与覆盖数量；补采结果仅在当前浏览器保存，仓库快照仍须由工作流提交。无同日合格数据时显示“待核实”。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}{result?.snapshot&&` ${result.snapshot.clientRecoveredAt?"浏览器细分项补采":"细分项仓库快照"} ${new Date(result.snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a> · <a href="https://gu.qq.com/sh510300" target="_blank" rel="noreferrer">腾讯财经·510300</a> · <a href="https://www.sse.com.cn/market/stockdata/overview/day/" target="_blank" rel="noreferrer">上交所·股票成交概况</a> · <a href="https://qt.gtimg.cn/q=sh510300" target="_blank" rel="noreferrer">腾讯财经·ETF 报价</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer>
       <section className="quote-library" aria-label="投资观点库导出"><div><strong>投资观点库</strong><span>逐条附有作者、原始出处和定位；页面按北京时间每日轮换。</span></div><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>导出观点库 CSV（{investorQuotes.length} 条）</button></section>
+      </section>
     </div>
   </main>;
 }
