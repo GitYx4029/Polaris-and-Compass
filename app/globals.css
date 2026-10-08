@@ -160,6 +160,8 @@ a.metric-mark:hover,a.metric-mark:focus-visible{border-color:#b3eed7;color:#fff}
 .reference-entry.active{background:#235049;margin:0 -8px;padding:10px 8px;border-radius:6px}
 .guide-block .reference-list>div{display:block;padding:11px 0}
 .guide-block .reference-list strong{display:block;font-size:17px}.guide-block .reference-list span{display:block;color:#bad1c9;margin-top:3px;font-size:13px;line-height:1.5}
+.guide-block .reference-list>div.active{background:#235049;margin:0 -8px;padding:11px 8px;border-radius:6px}
+.guide-block .reference-list em{display:block;color:#8de7ca;font-size:12px;font-style:normal;margin-top:3px}
 .guide-disclaimer{margin-top:15px}
 .history .panel-header{margin-bottom:16px}
 .history-unit{font-size:15px;color:#a5bfbb;margin:8px 0 0}

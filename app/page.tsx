@@ -498,6 +498,12 @@ export default function Home() {
   const delta=!provisional&&latest&&prev?(latest.total/prev.total-1)*100:null;
   const heat=!provisional?latest?.heat:undefined;
   const phase=waitingClose?"收盘数据待更新":waitingNoon?"午间数据待更新":intraday&&clock>="12:00"&&clock<"13:00"?"午间累计":intraday?"盘中累计":"收盘";
+  const rollingWan=complete?.roll20===undefined?null:complete.roll20/10000;
+  const rollingReference=rollingWan!==null&&rollingWan>=55&&rollingWan<=60?1:
+    rollingWan!==null&&rollingWan>=110&&rollingWan<=115?2:null;
+  const heatPercent=heat===undefined?null:heat*100;
+  const heatReference=heatPercent===null?null:heatPercent<85?0:heatPercent<=105?1:
+    heatPercent>110&&heatPercent<140?2:heatPercent>=140?3:null;
   const comparable=!provisional&&!!prev;
   const detailComparable=comparable&&latestDetail?.starSource===prevDetail?.starSource;
   const etfComparable=comparable&&latestDetail?.etfSource===prevDetail?.etfSource;
@@ -566,11 +572,11 @@ export default function Home() {
             <div className="range-list">{tiers.map((t,i)=><div className={`reference-entry ${i===currentTier?"active":""}`} key={t.text}><strong>{t.text}</strong><div><b>{t.name}</b><small>{t.note}</small></div>{i===currentTier&&<em>{provisional?"前收":"当前"}</em>}</div>)}</div>
           </div>
           <div className="guide-block" id="guide-rolling"><span className="guide-index">02 · 近 20 日累计成交额</span><h3>北极星指标</h3><p className="guide-description">大 A 近 20 个交易日流动成交额 · 单位：万亿元</p>
-            <div className="reference-list"><div><strong>11.38</strong><span>原有历史参考低点</span></div><div><strong>55—60</strong><span>利润开始撤走；原有减仓观察区间</span></div><div><strong>110—115</strong><span>全部撤走；原有清仓观察区间</span></div></div>
+            <div className="reference-list"><div><strong>11.38</strong><span>原有历史参考低点</span></div><div className={rollingReference===1?"active":undefined}><strong>55—60</strong><span>利润开始撤走；原有减仓观察区间</span>{rollingReference===1&&<em>{provisional?"前收":"当前"}</em>}</div><div className={rollingReference===2?"active":undefined}><strong>110—115</strong><span>全部撤走；原有清仓观察区间</span>{rollingReference===2&&<em>{provisional?"前收":"当前"}</em>}</div></div>
             <p className="fine">以上是原有的滚动累计观察值，对应页面的 20 日累计与趋势图。</p>
           </div>
           <div className="guide-block" id="guide-heat"><span className="guide-index">03 · 当日与基准比较</span><h3>资金温度计</h3><p className="guide-description">当日沪深成交额 ÷（近 20 日累计成交额 ÷ 20）</p>
-            <div className="reference-list"><div><strong>＜85%</strong><span>地量，交易较少；按原规则可准备买入</span></div><div><strong>85%—105%</strong><span>正常，按原规则暂不操作</span></div><div><strong>＞110%—＜140%</strong><span>过热，按原规则准备卖出</span></div><div><strong>≥140%</strong><span>太热，按原规则需要退出</span></div></div>
+            <div className="reference-list"><div className={heatReference===0?"active":undefined}><strong>＜85%</strong><span>地量，交易较少；按原规则可准备买入</span>{heatReference===0&&<em>当前</em>}</div><div className={heatReference===1?"active":undefined}><strong>85%—105%</strong><span>正常，按原规则暂不操作</span>{heatReference===1&&<em>当前</em>}</div><div className={heatReference===2?"active":undefined}><strong>＞110%—＜140%</strong><span>过热，按原规则准备卖出</span>{heatReference===2&&<em>当前</em>}</div><div className={heatReference===3?"active":undefined}><strong>≥140%</strong><span>太热，按原规则需要退出</span>{heatReference===3&&<em>当前</em>}</div></div>
             <p className="fine">105%—110% 未设定明确动作；85% 归入正常区间，140% 归入最高区间。</p>
           </div>
         </div>
