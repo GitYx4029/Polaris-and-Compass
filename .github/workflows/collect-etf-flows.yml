@@ -1,0 +1,53 @@
+name: Collect verified ETF net inflows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/collect-etf-flows.yml'
+      - 'scripts/*etf-flow*.mjs'
+  schedule:
+    # ETF subscription estimates can arrive the following morning. Each tick
+    # checks one small ranking response and exits if its date/values are unchanged.
+    - cron: '13,43 1 * * 1-5' # Beijing 09:13 / 09:43
+    - cron: '41 4 * * 1-5'    # Beijing 12:41
+    - cron: '17 8 * * 1-5'    # Beijing 16:17
+    - cron: '43 10 * * 1-5'   # Beijing 18:43
+    - cron: '47 14 * * 1-5'   # Beijing 22:47
+
+permissions:
+  contents: write
+
+# The market collector shares this group, preventing competing snapshot pushes.
+concurrency:
+  group: market-collection
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check ETF ranking and date guards
+        run: node scripts/etf-flows-self-check.mjs
+      - name: Collect daily net inflows and matching turnover
+        run: node scripts/collect-etf-flows.mjs
+      - name: Verify latest and archive
+        run: node scripts/verify-etf-flows.mjs
+      - name: Save verified ranking without rebuilding the site
+        run: |
+          git add public/data/etf-flows.json public/data/etf-flows-history.json
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Update verified ETF net inflows'
+            git pull --rebase origin main
+            git push
+          fi
