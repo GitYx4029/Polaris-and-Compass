@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "asOf": "2026-10-08",
-  "generatedAt": "2026-10-09T14:56:39.165Z",
+  "generatedAt": "2026-10-09T15:03:01.791Z",
   "source": "证券之星 ETF 数据宝",
   "sourceUrl": "https://fund.stockstar.com/etf/detail",
   "method": "数据源净申购赎回估算原值，非二级市场主力资金流向",
@@ -260,6 +260,6 @@
   ],
   "collection": {
     "requests": 23,
-    "seconds": 10.32
+    "seconds": 5.28
   }
 }
