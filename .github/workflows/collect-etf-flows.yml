@@ -38,6 +38,10 @@ jobs:
       - name: Check ETF ranking and date guards
         run: node scripts/etf-flows-self-check.mjs
       - name: Collect daily net inflows and matching turnover
+        env:
+          # A source-code push tests the entire live path on the GitHub runner.
+          # Regular schedules keep the one-request cache path.
+          ETF_FLOWS_FORCE: ${{ github.event_name == 'push' && '1' || '0' }}
         run: node scripts/collect-etf-flows.mjs
       - name: Verify latest and archive
         run: node scripts/verify-etf-flows.mjs
