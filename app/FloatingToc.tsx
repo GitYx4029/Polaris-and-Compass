@@ -1,18 +1,7 @@
 "use client";
 
 import { ChevronDown, List } from "lucide-react";
-
-const sections = [
-  ["daily-quote", "今日投资观点"],
-  ["overview", "成交额与资金温度"],
-  ["rolling", "20 日累计与均量"],
-  ["market-depth", "市场层级成交额"],
-  ["etf-inflows", "ETF 净流入前 20"],
-  ["market-trends", "各层级成交额趋势"],
-  ["history", "近期交易日"],
-  ["reference", "指标解读参考"],
-  ["quote-library", "观点库下载"],
-] as const;
+import { navigationGroups } from "@/lib/navigation";
 
 export default function FloatingToc() {
   return <details className="floating-toc" onKeyDown={event => {
@@ -22,14 +11,19 @@ export default function FloatingToc() {
     }
   }}>
     <summary aria-label="展开或收起页面目录"><List size={18}/><span>目录</span><ChevronDown size={16}/></summary>
-    <nav aria-label="页面目录">
+    <nav aria-label="页面目录" onClick={event => {
+      if ((event.target as HTMLElement).closest("a")) {
+        const directory = event.currentTarget.closest("details");
+        if (directory) directory.open = false;
+      }
+    }}>
       <p>快速跳转</p>
-      <ol>{sections.map(([id, label], index) => <li key={id}>
-        <a href={`#${id}`} onClick={event => {
-          const directory = event.currentTarget.closest("details");
-          if (directory) directory.open = false;
-        }}><span>{String(index + 1).padStart(2, "0")}</span>{label}</a>
+      <a className="toc-extra" href="#daily-quote">今日投资观点 · 分享</a>
+      <ol className="toc-groups">{navigationGroups.map(group => <li key={group.number}>
+        <div className="toc-group-title"><span>{group.number}</span><strong>{group.title}</strong></div>
+        <ul>{group.links.map(link => <li key={link.id}><a href={`#${link.id}`}>{link.label}</a></li>)}</ul>
       </li>)}</ol>
+      <a className="toc-extra toc-library" href="#quote-library">投资观点库 · 下载</a>
     </nav>
   </details>;
 }

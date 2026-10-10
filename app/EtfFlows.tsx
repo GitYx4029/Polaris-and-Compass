@@ -1,6 +1,7 @@
 "use client";
 import {useCallback,useEffect,useState} from "react";
 import {Download,RefreshCw} from "lucide-react";
+import {navigationGroups} from "@/lib/navigation";
 import {validEtfFlows,type EtfFlowSnapshot,type EtfFlowRow} from "@/lib/etfFlows";
 
 const root="https://raw.githubusercontent.com/GitYx4029/Polaris-and-Compass/main/public/data/";
@@ -65,7 +66,7 @@ export default function EtfFlows({refreshKey,marketDate}:{refreshKey?:string;mar
   const delayed=!!(snapshot&&marketDate&&snapshot.asOf<marketDate);
   return <section className={`panel etf-flows ${expanded?"flow-expanded":""}`} id="etf-inflows">
     <div className="panel-header"><div><p className="eyebrow">ETF DAILY NET INFLOWS</p>
-      <h2>资金净流入前 20 ETF</h2><p className="flow-subtitle">按净流入金额降序 · 净申购赎回估算 · 单位：亿元</p></div>
+      <h3>{navigationGroups[2].links[0].label}</h3><p className="flow-subtitle">按净流入金额降序 · 净申购赎回估算 · 单位：亿元</p></div>
       <div className="flow-actions"><button className="data-export" onClick={()=>snapshot&&saveCsv([snapshot])} disabled={!snapshot}><Download size={14}/>下载本期</button>
         <button className="data-export" onClick={downloadArchive} disabled={!snapshot||downloading}><Download size={14}/>{downloading?"下载中…":"下载历史"}</button>
         <button className="data-export icon-only" onClick={()=>void refresh()} disabled={loading} title="重新读取已核验榜单" aria-label="刷新 ETF 榜单"><RefreshCw size={14} className={loading?"spinning":""}/></button></div>

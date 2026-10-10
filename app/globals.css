@@ -59,10 +59,16 @@ h1,h2,p { margin-top:0; } h1 { font-size:34px;letter-spacing:-.035em;margin:0;li
 .notice {background:#213c41;border:1px solid #53757a;padding:11px 15px;border-radius:9px;margin-bottom:17px;color:#d9e9e7;font-size:14px}
 .notice.error{background:#402928;border-color:#78504b}.notice button{background:transparent;border:0;color:#a4e8dc;text-decoration:underline;margin-left:10px}
 .metrics {display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:18px;}
-.section-kicker{color:#7dc9b9;font-size:14px;font-weight:700;letter-spacing:.07em;margin:19px 0 10px}
+.observation-group{margin:26px 0 0}
+.section-kicker{display:flex;align-items:center;gap:11px;margin:0 0 13px;color:#dff2ed}
+.section-kicker>span{color:#71d8c2;font-size:12px;font-weight:650;letter-spacing:.07em;border:1px solid #426b67;border-radius:6px;padding:5px 7px}
+.section-kicker h2{font-size:21px;font-weight:700}
+.section-kicker::after{content:"";height:1px;flex:1;background:#315054;margin-left:3px}
+.observation-group .panel-header h3{font-size:20px;letter-spacing:-.02em;margin:0}
+.observation-group>.panel:last-child{margin-bottom:0}
 .rolling-summary{margin-bottom:18px}
 .rolling-head{display:grid;grid-template-columns:1fr 1fr;gap:30px;border-bottom:1px solid #30494f;padding-bottom:20px;margin-bottom:20px}
-.rolling-stat h2{font-size:18px}.rolling-stat .big{font-size:67px;margin:8px 0 0}
+.rolling-stat h3{font-size:18px;letter-spacing:-.02em;margin:0}.rolling-stat .big{font-size:67px;margin:8px 0 0}
 .rolling-stat .compact-number{margin:24px 0 0;font-size:42px}
 .average-stat{border-left:1px solid #30494f;padding-left:28px}
 .rolling-chart-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 12px}
@@ -161,7 +167,7 @@ a.metric-mark:hover,a.metric-mark:focus-visible{border-color:#b3eed7;color:#fff}
 .guide-groups{display:grid;grid-template-columns:1.12fr 1fr 1fr;gap:13px}
 .guide-block{background:#142f35;border:1px solid #315257;border-radius:10px;padding:18px;scroll-margin-top:20px}
 .guide-index{display:block;font-size:12px;font-weight:650;color:#7dccbd;letter-spacing:.06em}
-.guide-block h3{font-size:21px;color:#ecf7f3;margin:5px 0 0}
+.guide-block h4{font-size:21px;color:#ecf7f3;margin:5px 0 0}
 .guide-description{font-size:14px;color:#aac3bd;line-height:1.5;margin:4px 0 16px;min-height:42px}
 .guide-block .range-list,.guide-block .reference-list{border-top:1px solid #39575a;margin:0;padding:0}
 .reference-entry{display:grid;grid-template-columns:82px 1fr 27px;gap:8px;align-items:start;padding:10px 0;border-bottom:1px solid #39575a}
@@ -249,9 +255,18 @@ html{scroll-behavior:smooth}
 .floating-toc[open]>summary svg:last-child{transform:rotate(180deg)}
 .floating-toc nav{position:absolute;bottom:calc(100% + 12px);right:0;width:min(290px,calc(100vw - 32px));max-height:calc(100dvh - 110px);overflow-y:auto;overscroll-behavior:contain;padding:14px 10px;background:#10292f;border:1px solid #42656a;border-radius:14px;box-shadow:0 10px 36px #0009}
 .floating-toc nav p{margin:0 10px 8px;color:#8cbbb3;font-size:13px;font-weight:650}
-.floating-toc ol{list-style:none;padding:0;margin:0}
+.floating-toc ol,.floating-toc ul{list-style:none;padding:0;margin:0}
 .floating-toc a{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px;border-radius:8px;color:#e0f1ec;text-decoration:none;font-size:15px;line-height:1.45}
 .floating-toc a span{color:#62d4bd;font-size:12px;font-variant-numeric:tabular-nums}
 .floating-toc a:hover{background:#1d4247}
 @media(max-width:530px){.floating-toc{right:16px}.floating-toc>summary{min-height:44px;padding:10px 13px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.floating-toc>summary svg:last-child{transition:none}}
+
+.floating-toc .toc-groups>li{margin-top:9px;padding-top:9px;border-top:1px solid #315054}
+.toc-group-title{display:flex;align-items:center;gap:9px;margin:0 10px 2px;font-size:14px;line-height:1.5}
+.toc-group-title>span{color:#69d9c2;font-size:12px;font-variant-numeric:tabular-nums}
+.toc-group-title>strong{color:#80d1c2;font-weight:650}
+.floating-toc .toc-groups a{padding-left:34px;font-size:14px}
+.floating-toc .toc-extra{font-size:14px;color:#b5cec5}
+.floating-toc .toc-library{margin-top:9px;padding-top:12px;border-top:1px solid #315054;border-radius:0 0 8px 8px}
+@media(max-width:530px){.observation-group{margin-top:22px}.section-kicker h2{font-size:19px}}
