@@ -74,7 +74,7 @@ export function MarginDownload({metric="all",compact=false}:{metric?:DownloadMet
 
 function LadderBadge({metric}:{metric:LadderKey}){
   const {points,index,setLadderKey}=useMargin();const ladder=marginLadder(points,index,metric);
-  return ladder?<a className="metric-mark neutral" href="#margin-reference" onClick={()=>setLadderKey(metric)}>{ladderLabels[metric][ladder.band]} · P{ladder.rank.toFixed(0)}</a>:<span className="margin-muted">历史分位待积累</span>;
+  return ladder?<a className="metric-mark neutral" href="#margin-reference" onClick={()=>setLadderKey(metric)}>{ladderLabels[metric][ladder.band]}</a>:<span className="margin-muted">历史样本待积累</span>;
 }
 function MarginCharts(){
   const {points,index,pick}=useMargin(),[chart,setChart]=useState("balance"),[full,setFull]=useState(false),[hover,setHover]=useState<number|null>(null);
@@ -131,14 +131,14 @@ export function MarginReference(){
   const ladder=useMemo(()=>marginLadder(points,index,key),[points,index,key]);
   const display=(v:number)=>key==="balance"?`${wan(v)} 万亿`:`${numeric(v,2)}%`;
   return <section className="margin-reference" id="margin-reference"><div className="margin-ref-heading"><div><p className="eyebrow">DATA LADDER / 数据阶梯</p><h4>融资与杠杆 · 阶梯参考</h4></div><span>{points[index]?.date??"等待数据"} · 与上方所选日期同步</span></div>
-    <p className="fine">按选定日前最多三年历史的 P20／P40／P60／P80 分五档，区间自动换算成实际金额或百分比。分档是工具的统计展示规则，尚未验证买卖胜率；规模高不直接等于市场热。</p>
+    <p className="fine">根据选定日前最多三年的历史数据划分五档，直接显示实际金额或百分比区间。分档用于观察相对历史位置，尚未验证买卖胜率；规模高不直接等于市场热。</p>
     <div className="chart-tabs margin-reference-tabs" role="group" aria-label="融资阶梯指标">{([["balance","融资规模"],["intensity20","融资参与 · 20 日平滑"],["growth20","20 日增速"]] as const).map(([metric,label])=><button key={metric} aria-pressed={key===metric} className={key===metric?"active":""} onClick={()=>setKey(metric)}>{label}</button>)}</div>
-    {ladder?<><div className="margin-ladder-current">当前 <strong>{display(ladder.value)}</strong><span>{ladderLabels[key][ladder.band]} · 历史 P{ladder.rank.toFixed(1)}</span></div>
+    {ladder?<><div className="margin-ladder-current">当前 <strong>{display(ladder.value)}</strong><span>{ladderLabels[key][ladder.band]}</span></div>
       <ol className="margin-ladder">{ladderLabels[key].map((label,i)=>{const range=i===0?`＜ ${display(ladder.bounds[0])}`:i===4?`≥ ${display(ladder.bounds[3])}`:`${display(ladder.bounds[i-1])} — ＜ ${display(ladder.bounds[i])}`;
         return <li key={label} className={i===ladder.band?"active":""}><div><span className="margin-step">{i+1}</span><strong>{range}</strong><b>{label}</b>{i===ladder.band&&<em>所选日</em>}</div><p>{explanations[key][i]}</p></li>;})}</ol>
-      <p className="fine">校准样本 {ladder.start}—{ladder.end}，{ladder.count} 个有效交易日，不含所选日及之后的数据。P80 表示高于约八成历史观测；区间显示值四舍五入，分档使用原始精度。历史查看不使用未来数据。</p>
     </>:<p className="empty">至少需要所选日前 252 个有效交易日，才展示阶梯。{snapshot?"可拖动上方滑轨选择近期日期。":"数据通过核验后显示。"}</p>}
-    <div className="margin-method" id="margin-method"><strong>指标与边界</strong><p>融资净买入＝融资买入额－偿还额；近 5／20 日为完整交易日累计。净偿还可能是现金还款；两融汇总不覆盖全部场外杠杆。融资交易强度采用上方明示的代理口径，仅在相同口径历史内比较。正增幅才是余额扩张，不能仅因增速分位高就称为“快速扩张”。</p><p>原有指南针、北极星和资金温度计属于经验观察规则；新增阶梯是相对历史刻度，均不直接生成买卖指令。政策和融资标的范围变化会影响历史可比性。</p></div>
+    <details className="margin-research"><summary>分档方法与历史样本</summary><p>使用所选日前最多三年的有效历史数据，至少需要 252 个交易日；以 P20／P40／P60／P80 为边界划分五档。P80 表示高于约八成历史观测，不是上涨概率或买卖信号。</p>{ladder&&<p>校准样本 {ladder.start}—{ladder.end}，{ladder.count} 个有效交易日。所选值的历史位置为 P{ladder.rank.toFixed(1)}。</p>}<p>样本不含所选日及之后的数据，历史查看不使用未来数据。区间显示值四舍五入，分档使用原始精度。</p></details>
+    <div className="margin-method" id="margin-method"><strong>指标与边界</strong><p>融资净买入＝融资买入额－偿还额；近 5／20 日为完整交易日累计。净偿还可能是现金还款；两融汇总不覆盖全部场外杠杆。融资交易强度采用上方明示的代理口径，仅在相同口径历史内比较。正增幅才是余额扩张，不能仅因增速处于高档就称为“快速扩张”。</p><p>原有指南针、北极星和资金温度计属于经验观察规则；新增阶梯是相对历史刻度，均不直接生成买卖指令。政策和融资标的范围变化会影响历史可比性。</p></div>
     <details className="margin-research"><summary>研究依据与来源</summary>{marginResearch.map(r=><p key={r.url}><a href={r.url} target="_blank" rel="noreferrer">{r.title}</a> · {r.date} · {r.page}<br/>{r.note}</p>)}<p><a href="https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20260114_10805178.shtml" target="_blank" rel="noreferrer">2026 年融资保证金政策调整</a>：制度变化可能影响不同阶段的指标水平，历史分位不保证预测能力。</p></details>
   </section>;
 }
