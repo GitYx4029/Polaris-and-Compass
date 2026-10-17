@@ -60,3 +60,16 @@ GitHub Actions 的 `schedule` 可能延迟或不触发。网页在完整收盘�
 3. 在 Cloudflare Workers 的 `polaris-market-watchdog → Triggers` 确认三条 UTC Cron；在 `Logs` 查看第一次定时运行结果 `verified` 或 `dispatched`。当工作流被触发时，到 GitHub Actions 确认 `Collect verified market snapshot` 成功，并在页面核对数据日期。密钥到期前需在 GitHub 轮换并重新执行 `wrangler secret put`。
 
 本地无需行情 API 的检查：`node scheduler/self-check.mjs`。定时器只负责触发 GitHub 工作流，若 GitHub Actions 本身整日不可用，历史归档仍无法完成。
+
+
+## 融资与杠杆：独立采集、校验和数据阶梯
+
+- `node --experimental-strip-types scripts/collect-margin.mjs` 采集沪深证券融资汇总（包含 ETF 等融资标的，不含北交所），写入 `public/data/margin.json`；网页直接读取该文件，数据更新不触发网页重建，不调用大模型。
+- 初次及每周首次运行回查三年加预热期历史；日常只查询最近窗口，无变化时两次请求退出。东方财富分市场历史与上交所逐日核验、深交所官方统计抽查；后续新统计日均须通过同日官方核验。深交所单位按接口表头识别，其当前亿元展示值截取到两位，核验容差严格限定在该展示精度内。
+- 数据源停用或异常时，已有历史可通过沪深交易所直接补采最多五个缺失交易日。备用模式的偿还额由余额与买入推算，净额反映负债变化；深市按公布精度，CSV 保留沪市偿还原值及推算标记；失败时不覆盖上次数据。统计范围、单位、交易日缺口、市场日期、融资余额勾稽及两融合计均校验。
+- 融资交易强度＝含 ETF 等标的的融资买入额／腾讯沪深股票行情成交额，是透明标注的代理指标，不冒充严格股票融资占比。20 日平滑值为逐日比值的算术平均。融资净买入按买入－偿还计算，5/20 日按交易日累加，20 日增速以 20 个交易日前余额为分母。
+- 阶梯按观察日前最多三年、至少 252 个有效观测计算 P20/P40/P60/P80（线性插值）；观察当日和以后数据不进入校准。规模、参与强度、增速各用独立标签，不合成买卖分数。早期历史样本不足时不展示阶梯。历史制度变动可能改变可比性，分档不代表已验证投资策略。
+- `collect-margin.yml` 北京时间工作日 09:07、09:37、10:17、12:23、16:37 错峰运行；周五深市记录可能到下周一才发布，始终只合并沪深共同日期。页面后台在可见时每五分钟重读，提供手动刷新、逐项及完整历史 CSV。
+- 离线回归：`node --experimental-strip-types scripts/margin-self-check.mjs`；数据验证：`node --experimental-strip-types scripts/verify-margin.mjs`。CI 在网页发布和融资采集前运行检查。
+
+备用路径现场检查可使用 `MARGIN_EXCHANGE_ONLY=1`，并通过 `MARGIN_OUTPUT_DIR` 指定隔离测试目录。该模式不将官方偿还原值的权益调整差异隐藏为真实现金流。

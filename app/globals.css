@@ -270,3 +270,66 @@ html{scroll-behavior:smooth}
 .floating-toc .toc-extra{font-size:14px;color:#b5cec5}
 .floating-toc .toc-library{margin-top:9px;padding-top:12px;border-top:1px solid #315054;border-radius:0 0 8px 8px}
 @media(max-width:530px){.observation-group{margin-top:22px}.section-kicker h2{font-size:19px}}
+
+/* Financing is a separate market-wide subsection; its data do not change the
+   existing turnover figures or the original user-supplied reference rules. */
+.margin-panel{margin-bottom:18px}
+.margin-subtitle{font-size:14px;color:#9ebdb5;line-height:1.5;margin:7px 0 0}
+.margin-session{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 14px;margin-bottom:16px;font-size:15px;color:#cce7dd}
+.margin-session>span,.margin-muted{font-size:13px;color:#9cbab0}
+.margin-date-note{padding:10px 12px;border:1px solid #456c64;border-radius:8px;background:#173431;margin:0 0 15px}
+.margin-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.margin-stat{min-width:0;border:1px solid #31534f;border-radius:10px;padding:18px;background:#13312f}
+.margin-stat-title{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#cfebe1;font-weight:650;font-size:16px}
+.margin-number{font-size:clamp(27px,3.1vw,39px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.025em;line-height:1.2;margin:13px 0 2px;color:#f0fff5;overflow-wrap:anywhere}
+.margin-number small{font-size:13px;color:#a8cabd;font-weight:400;margin-left:7px;letter-spacing:0;display:inline-block}
+.margin-stat p{font-size:14px;line-height:1.7;margin:10px 0 8px;color:#aac9be;font-variant-numeric:tabular-nums}
+.margin-stat>a:not(.metric-mark){font-size:13px;color:#84dbc5}
+.margin-stat .margin-muted{display:block;margin-top:10px}
+.margin-chart-area{border-top:1px solid #35554f;margin-top:22px;padding-top:18px}
+.margin-chart-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;color:#d3eee2;margin-bottom:14px;font-size:16px}
+.margin-chart-heading span{font-size:13px;color:#99b9ae}
+.margin-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.margin-chart>span{display:block;font-size:14px;color:#b3d4c6;margin-bottom:9px}
+.margin-chart svg{display:block;width:100%;height:175px;overflow:visible;touch-action:pan-y}
+.margin-chart .chart-axis{font-size:13px;padding:0 20px}
+.margin-chart-tabs{display:none}
+.margin-proxy-note{padding-top:13px;border-top:1px solid #35554f}
+.margin-audit,.margin-research{font-size:13px;color:#9bbcaf;line-height:1.65;margin-top:12px}
+.margin-audit summary,.margin-research summary{cursor:pointer;color:#9cdbc7;padding:5px 0}
+.margin-audit p,.margin-research p{margin:9px 0 0;overflow-wrap:anywhere}
+.reference-section-label{font-size:14px;color:#9bcbc0;margin:18px 0 13px;font-weight:600}
+.margin-reference{border-top:1px solid #43635b;margin-top:25px;padding-top:22px}
+.margin-ref-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.margin-ref-heading h4{font-size:20px;color:#e7f7ee;margin:0 0 4px}
+.margin-ref-heading>span{font-size:13px;color:#9ebcae}
+.margin-reference-tabs{margin:16px 0 14px}
+.margin-ladder-current{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px;color:#b7d7c8;padding:12px 14px;border-radius:8px;background:#1c443a;margin-bottom:10px}
+.margin-ladder-current>strong{font-size:20px;font-variant-numeric:tabular-nums;color:#8bf0d3}
+.margin-ladder-current>span{color:#d9f4e5}
+.margin-ladder{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.margin-ladder li{border:1px solid #304e4b;border-radius:9px;padding:12px 14px;background:#102b2b}
+.margin-ladder li.active{border-color:#62bda3;background:#1c4035}
+.margin-ladder li>div{display:flex;align-items:center;gap:9px 12px;flex-wrap:wrap}
+.margin-step{font-size:12px;color:#83baa7;width:16px;flex:none}
+.margin-ladder strong{font-size:17px;color:#e4f7eb;font-variant-numeric:tabular-nums}
+.margin-ladder b{font-size:14px;color:#8bdac0;font-weight:600}
+.margin-ladder em{font-size:11px;font-style:normal;color:#d9ffe7;border:1px solid #68a58a;border-radius:4px;padding:1px 5px;margin-left:auto;white-space:nowrap}
+.margin-ladder p{font-size:14px;line-height:1.6;color:#a9c6b6;margin:5px 0 0 28px}
+.margin-method{font-size:14px;color:#c3dfcf;border-top:1px solid #31534c;margin-top:15px;padding-top:13px;line-height:1.7}
+.margin-method p{color:#a1beae;margin:6px 0 0}
+@media(max-width:650px){
+  .margin-panel>.panel-header{flex-direction:column;gap:12px}.margin-panel .flow-actions{width:100%}
+  .margin-cards{gap:10px}.margin-stat{padding:14px 12px}.margin-stat-title{font-size:15px;align-items:flex-start}
+  .margin-number{font-size:29px;margin-top:13px}.margin-number small{display:block;margin:4px 0 0;font-size:13px}
+  .margin-stat p{font-size:13px}.margin-stat .metric-mark{font-size:11px}
+  .margin-charts{display:block}.margin-chart{display:none}.margin-chart.is-active{display:block}
+  .margin-chart svg{height:180px}.margin-chart-tabs{display:flex;gap:8px;margin-bottom:13px}
+  .margin-chart-tabs button{padding:7px 12px;border:1px solid #42695e;border-radius:7px;background:#133630;color:#b4dbca;font-size:14px}
+  .margin-chart-tabs button[aria-pressed=true]{background:#245245;border-color:#7bceb2;color:#f0fff6}
+  .margin-ladder li{padding:11px 12px}.margin-ladder strong{font-size:16px}.margin-ladder p{font-size:14px}
+}
+@media(max-width:360px){.margin-cards{grid-template-columns:1fr}.margin-number small{display:inline-block;margin-left:6px}}
+.margin-range-tabs{display:flex;gap:7px;margin:-3px 0 14px}
+.margin-range-tabs button{font-size:12px;color:#a2ccba;border:1px solid #416559;background:#102e28;border-radius:6px;padding:5px 9px}
+.margin-range-tabs button[aria-pressed=true]{color:#effff3;background:#275543;border-color:#78bc9b}

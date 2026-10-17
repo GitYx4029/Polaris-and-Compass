@@ -1,0 +1,169 @@
+{
+  "sse": {
+    "actionErrors": [],
+    "actionMessages": [],
+    "beginDate": "20261015",
+    "detailsDate": "",
+    "endDate": "20261016",
+    "fieldErrors": {},
+    "isPagination": "true",
+    "jsonCallBack": null,
+    "locale": "en_CN",
+    "pageHelp": {
+      "beginPage": 1,
+      "cacheSize": 5,
+      "data": [
+        {
+          "ROWNUM_": null,
+          "opDate": "20261016",
+          "rqchl": null,
+          "rqmcl": 54723421,
+          "rqyl": 3227483213,
+          "rqylje": 18670701680,
+          "rw": null,
+          "rzche": 74159583010,
+          "rzmre": 66923010429,
+          "rzrqjyzl": 1276920650530,
+          "rzye": 1258249948850,
+          "securityAbbr": null,
+          "stockCode": null
+        }
+      ],
+      "endDate": null,
+      "endPage": null,
+      "objectResult": null,
+      "pageCount": 1,
+      "pageNo": 1,
+      "pageSize": 10,
+      "pageSizeWithOutLimit": 10,
+      "searchDate": null,
+      "sort": null,
+      "startDate": null,
+      "total": 1
+    },
+    "pageNo": null,
+    "pageSize": null,
+    "queryDate": "",
+    "result": [
+      {
+        "ROWNUM_": null,
+        "opDate": "20261016",
+        "rqchl": null,
+        "rqmcl": 54723421,
+        "rqyl": 3227483213,
+        "rqylje": 18670701680,
+        "rw": null,
+        "rzche": 74159583010,
+        "rzmre": 66923010429,
+        "rzrqjyzl": 1276920650530,
+        "rzye": 1258249948850,
+        "securityAbbr": null,
+        "stockCode": null
+      }
+    ],
+    "securityCode": "",
+    "stockCode": "",
+    "tabType": "",
+    "texts": null,
+    "type": "",
+    "validateCode": ""
+  },
+  "szse": [
+    {
+      "metadata": {
+        "catalogid": "1837_xxpl",
+        "subname": "2026-10-15",
+        "cols": {
+          "jrrzmr": "融资买入额<br>(亿元)",
+          "jrrzye": "融资余额<br>(亿元)",
+          "jrrjmc": "融券卖出量<br>(亿股/亿份)",
+          "jrrjyl": "融券余量<br>(亿股/亿份)",
+          "jrrjye": "融券余额<br>(亿元)",
+          "jrrzrjye": "融资融券余额<br>(亿元)"
+        }
+      },
+      "data": [
+        {
+          "jrrzmr": "554.78",
+          "jrrzye": "12,006.74",
+          "jrrjmc": "0.25",
+          "jrrjyl": "12.21",
+          "jrrjye": "104.21",
+          "jrrzrjye": "12,110.95"
+        }
+      ],
+      "error": null
+    }
+  ],
+  "emSz": {
+    "version": "b9755a7ab87b448e502c1e29115e58ad",
+    "result": {
+      "data": [
+        {
+          "RZYE": 1200674351880,
+          "RQYL": 1221407190,
+          "RZMRE": 55478821703,
+          "DIM_DATE": "2026-10-15 00:00:00",
+          "XOB_MARKET_0001": "融资融券_深证",
+          "RQYE": 10421061796,
+          "SCDM": "001",
+          "RQMCL": 25803482,
+          "NEW": 11816.7885,
+          "ZDF": -2.425996,
+          "LTSZ": 33493769396809.8,
+          "RZYEZB": 3.58476927,
+          "RZMRE3D": 168175256514,
+          "RZMRE5D": 294363606695,
+          "RZMRE10D": 586514931239,
+          "RZCHE": 72212556645,
+          "RZCHE3D": 195523648781,
+          "RZCHE5D": 331716512619,
+          "RZCHE10D": 661869399861,
+          "RZJME": -16733734942,
+          "RZJME3D": -27348392267,
+          "RZJME5D": -37352905924,
+          "RZJME10D": -75354468622,
+          "RQMCL3D": 88015388,
+          "RQMCL5D": 151137342,
+          "RQMCL10D": 283148052,
+          "RQCHL": 28185255,
+          "RQCHL3D": 68998398,
+          "RQCHL5D": 127221465,
+          "RQCHL10D": 266453005,
+          "RQJMG": -2381773,
+          "RQJMG3D": 19016990,
+          "RQJMG5D": 23915877,
+          "RQJMG10D": 16695047,
+          "ZDF3D": -4.59,
+          "ZDF5D": -6.37,
+          "ZDF10D": -13.34,
+          "RZRQYE": 1211095413676,
+          "RZRQYECZ": 1190253290084
+        }
+      ],
+      "pages": 1,
+      "count": 1
+    },
+    "success": true,
+    "message": "ok",
+    "code": 0
+  },
+  "sseRepaymentExample": {
+    "previousBalance": 1280077130900,
+    "current": {
+      "ROWNUM_": null,
+      "opDate": "20261015",
+      "rqchl": null,
+      "rqmcl": 71617715,
+      "rqyl": 3234727344,
+      "rqylje": 18574842169,
+      "rw": null,
+      "rzche": 82931547657,
+      "rzmre": 68350771372,
+      "rzrqjyzl": 1284061363628,
+      "rzye": 1265486521459,
+      "securityAbbr": null,
+      "stockCode": null
+    }
+  }
+}

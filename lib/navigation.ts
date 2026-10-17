@@ -3,6 +3,7 @@ export const navigationGroups = [
   { number: "01", title: "全市场观察", links: [
     { id: "overview", label: "当日成交额与资金温度" },
     { id: "rolling", label: "20 日累计与均量" },
+    { id: "margin", label: "融资与杠杆" },
   ] },
   { number: "02", title: "市场细分", links: [
     { id: "market-depth", label: "市场成交额分布" },
