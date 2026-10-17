@@ -1,6 +1,8 @@
 // Public HTTP data + deterministic arithmetic only. No browser, account or LLM.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {marginAssert as check,validateMargin} from '../lib/margin.ts';
 import {emUrl,sseUrl,szseUrl,parseEm,parseSse,parseSzse,matchVenue,parseStockTurnover,assertMarginCalendar,inferredRepayment} from './margin-adapters.mjs';
 const started=performance.now(),now=new Date(),today=new Date(+now+8*3600000).toISOString().slice(0,10);
@@ -19,7 +21,16 @@ async function get(url){
       Referer:host.includes('szse')?'https://www.szse.cn/':host.includes('sse')?'https://www.sse.com.cn/':'https://data.eastmoney.com/'},signal:AbortSignal.timeout(18000)});
     if(!response.ok)throw Error(`HTTP ${response.status}`);return await response.text();
   }catch(e){failure=e;}
-  throw Error(`${new URL(url).hostname}: ${failure}`);
+  // Some exchange front ends close Node/undici TLS sessions on overseas
+  // runners. curl is a transport fallback to the same official HTTPS URL,
+  // with normal certificate verification and all date/unit checks retained.
+  if(new URL(url).hostname==='www.szse.cn')try{
+    requests++;
+    const {stdout}=await promisify(execFile)('curl',['--fail','--silent','--show-error','--location','--max-time','20',
+      '--connect-timeout','8','--user-agent','Mozilla/5.0','--referer','https://www.szse.cn/',url],{maxBuffer:2_000_000});
+    return stdout;
+  }catch(e){failure=e;}
+  throw Error(`${new URL(url).hostname}: ${failure}; cause=${failure?.cause??''}`);
 }
 async function em(market){
   const from=full?start:shift(prior.asOf,-45);
@@ -71,7 +82,7 @@ let officialCount=0;
 for(const date of common){if(date<checkedFrom)continue;const official=officialSh.get(date);check(official,`missing official SH financing ${date}`);matchVenue(sh.get(date),official,1);officialCount++;}
 if(mode==='provider+official'){
   const checkDates=full?[common[0],common[Math.floor(common.length/2)],asOf]:[asOf];
-  await Promise.all([...new Set(checkDates)].map(async date=>{const official=parseSzse(JSON.parse(await get(szseUrl(date))),date);matchVenue(sz.get(date),official.venue,official.tolerance);officialSzDates.push(date);}));
+  for(const date of [...new Set(checkDates)]){const official=parseSzse(JSON.parse(await get(szseUrl(date))),date);matchVenue(sz.get(date),official.venue,official.tolerance);officialSzDates.push(date);}
 }
 const turnover=await Promise.all(['sh000001','sz399001'].map(async symbol=>{
   const url=new URL('https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get');
