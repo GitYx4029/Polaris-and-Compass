@@ -3,9 +3,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
+import {setDefaultResultOrder} from 'node:dns';
 import {marginAssert as check,validateMargin} from '../lib/margin.ts';
 import {emUrl,sseUrl,szseUrl,parseEm,parseSse,parseSzse,matchVenue,parseStockTurnover,assertMarginCalendar,inferredRepayment} from './margin-adapters.mjs';
 const started=performance.now(),now=new Date(),today=new Date(+now+8*3600000).toISOString().slice(0,10);
+setDefaultResultOrder('ipv4first');
 const directory=path.resolve(process.env.MARGIN_OUTPUT_DIR??'public/data'),file=path.join(directory,'margin.json');
 let prior=null,requests=0;
 try{prior=JSON.parse(await fs.readFile(file,'utf8'));validateMargin(prior,today);}catch(e){if(e.code!=='ENOENT')throw e;}
@@ -24,10 +26,10 @@ async function get(url){
   // Some exchange front ends close Node/undici TLS sessions on overseas
   // runners. curl is a transport fallback to the same official HTTPS URL,
   // with normal certificate verification and all date/unit checks retained.
-  if(new URL(url).hostname==='www.szse.cn')try{
+  if(['www.szse.cn','query.sse.com.cn'].includes(new URL(url).hostname))try{
     requests++;
-    const {stdout}=await promisify(execFile)('curl',['--fail','--silent','--show-error','--location','--max-time','20',
-      '--connect-timeout','8','--user-agent','Mozilla/5.0','--referer','https://www.szse.cn/',url],{maxBuffer:2_000_000});
+    const {stdout}=await promisify(execFile)('curl',['--ipv4','--fail','--silent','--show-error','--location','--max-time','20',
+      '--connect-timeout','8','--user-agent','Mozilla/5.0','--referer',new URL(url).hostname.includes('szse')?'https://www.szse.cn/':'https://www.sse.com.cn/',url],{maxBuffer:2_000_000});
     return stdout;
   }catch(e){failure=e;}
   throw Error(`${new URL(url).hostname}: ${failure}; cause=${failure?.cause??''}`);
