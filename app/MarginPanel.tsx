@@ -77,12 +77,12 @@ function LadderBadge({metric}:{metric:LadderKey}){
   return ladder?<a className="metric-mark neutral" href="#margin-reference" onClick={()=>setLadderKey(metric)}>{ladderLabels[metric][ladder.band]} · P{ladder.rank.toFixed(0)}</a>:<span className="margin-muted">历史分位待积累</span>;
 }
 function MarginCharts(){
-  const {points,index,pick}=useMargin(),[chart,setChart]=useState("balance"),[full,setFull]=useState(false);
-  const from=full?0:Math.max(0,points.length-120),shown=points.slice(from),focus=points[index],w=640,h=172,p=24;
+  const {points,index,pick}=useMargin(),[chart,setChart]=useState("balance"),[full,setFull]=useState(false),[hover,setHover]=useState<number|null>(null);
+  const from=full?0:Math.max(0,points.length-120),shown=points.slice(from),focus=points[hover??index],w=640,h=172,p=24;
   if(shown.length<2||!focus)return null;
-  const chartIndex=Math.max(0,index-from);
+  const chartIndex=Math.max(0,(hover??index)-from);
   const x=(i:number)=>p+i/(shown.length-1)*(w-2*p);
-  const select=(clientX:number,rect:DOMRect)=>pick(from+Math.max(0,Math.min(shown.length-1,Math.round(((clientX-rect.left)/rect.width*w-p)/(w-2*p)*(shown.length-1)))));
+  const pointerIndex=(clientX:number,rect:DOMRect)=>from+Math.max(0,Math.min(shown.length-1,Math.round(((clientX-rect.left)/rect.width*w-p)/(w-2*p)*(shown.length-1))));
   return <div className="margin-chart-area"><div className="margin-chart-heading"><strong>融资规模与净买入趋势</strong><span>{shown.length} 个交易日 · 单位：亿元</span></div>
     <div className="margin-range-tabs" role="group" aria-label="融资图表历史范围"><button aria-pressed={!full} onClick={()=>{setFull(false);if(index<points.length-120)pick(points.length-1);}}>近 120 日</button><button aria-pressed={full} onClick={()=>setFull(true)}>全部历史</button></div>
     <div className="margin-chart-tabs" role="group" aria-label="融资图表切换">{[["balance","融资余额"],["net","融资净买入"]].map(([key,label])=><button key={key} aria-pressed={chart===key} onClick={()=>setChart(key)}>{label}</button>)}</div>
@@ -90,15 +90,15 @@ function MarginCharts(){
       const values=shown.map(d=>kind==="balance"?d.balance:d.net),lo=kind==="balance"?Math.min(...values)*.995:Math.min(0,...values),hi=kind==="balance"?Math.max(...values)*1.005:Math.max(0,...values);
       const y=(v:number)=>h-p-(v-lo)/(hi-lo||1)*(h-2*p),zero=y(0);
       return <div className={`margin-chart ${chart===kind?"is-active":""}`} key={kind}><span>{kind==="balance"?"融资余额":"当日融资净买入"}</span>
-        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={kind==="balance"?"沪深融资余额历史曲线":"沪深融资净买入历史柱状图"} onPointerMove={event=>select(event.clientX,event.currentTarget.getBoundingClientRect())}>
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={kind==="balance"?"沪深融资余额历史曲线":"沪深融资净买入历史柱状图"} onPointerMove={event=>setHover(pointerIndex(event.clientX,event.currentTarget.getBoundingClientRect()))} onPointerLeave={()=>setHover(null)} onClick={event=>pick(pointerIndex(event.clientX,event.currentTarget.getBoundingClientRect()))}>
           {[0,.5,1].map(t=><g key={t}><line x1={p} x2={w-p} y1={p+t*(h-2*p)} y2={p+t*(h-2*p)} stroke="#36575a" strokeDasharray="3 6"/><text x={w-p} y={p+t*(h-2*p)-5} textAnchor="end" fill="#9ebdb5" fontSize="13">{((hi-t*(hi-lo))/1e8).toFixed(0)}</text></g>)}
           {kind==="balance"?<path d={values.map((v,i)=>`${i?"L":"M"}${x(i)},${y(v)}`).join(" ")} stroke="#6fe1cb" strokeWidth="2.5" fill="none" vectorEffect="non-scaling-stroke"/>:<><line x1={p} x2={w-p} y1={zero} y2={zero} stroke="#73938b"/>{values.map((v,i)=><rect key={i} x={x(i)-2} y={Math.min(zero,y(v))} width={Math.max(2,(w-2*p)/shown.length*.65)} height={Math.max(1,Math.abs(y(v)-zero))} fill={v>=0?"#64ceba":"#d4b67c"}/>)}</>}
           {index>=from&&<line x1={x(chartIndex)} x2={x(chartIndex)} y1={p} y2={h-p} stroke="#e7f7f0" strokeDasharray="2 3"/>}
         </svg><div className="chart-axis"><span>{shown[0].date.slice(5)}</span><span>{shown.at(-1)!.date.slice(5)}</span></div>
       </div>;
     })}</div>
-    <label className="chart-scrubber"><span>拖动核对交易日</span><input type="range" min={from} max={points.length-1} step={1} value={index} style={{"--scrub-progress":`${(index-from)/(points.length-1-from)*100}%`} as CSSProperties} onChange={e=>pick(Number(e.currentTarget.value))} aria-label="选择融资与杠杆交易日"/><strong>{focus.date}</strong></label>
-    <p className="chart-readout">融资余额 <b>{yi(focus.balance)} 亿元</b> · 净买入 <b>{signed(focus.net/1e8)} 亿元</b> · 20 日净买入 <b>{focus.net20===undefined?"—":signed(focus.net20/1e8)} 亿元</b></p>
+    <label className="chart-scrubber"><span>拖动核对交易日</span><input type="range" min={from} max={points.length-1} step={1} value={index} style={{"--scrub-progress":`${(index-from)/(points.length-1-from)*100}%`} as CSSProperties} onChange={e=>{setHover(null);pick(Number(e.currentTarget.value));}} aria-label="选择融资与杠杆交易日"/><strong>{points[index].date}</strong></label>
+    <p className="chart-readout">{hover!==null&&`${focus.date} · `}融资余额 <b>{yi(focus.balance)} 亿元</b> · 净买入 <b>{signed(focus.net/1e8)} 亿元</b> · 20 日净买入 <b>{focus.net20===undefined?"—":signed(focus.net20/1e8)} 亿元</b></p>
     {index<from&&<p className="fine">所选日期早于图表最近 120 日范围；卡片、数值和阶梯已同步至 {focus.date}。</p>}
   </div>;
 }
