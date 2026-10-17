@@ -32,6 +32,14 @@ async function get(url){
       '--connect-timeout','8','--user-agent','Mozilla/5.0','--referer',new URL(url).hostname.includes('szse')?'https://www.szse.cn/':'https://www.sse.com.cn/',url],{maxBuffer:2_000_000});
     return stdout;
   }catch(e){failure=e;}
+  // Exchanges also publish these public, credential-free report endpoints on
+  // HTTP. Cross-source reconciliation still runs before accepting any value.
+  if(['www.szse.cn','query.sse.com.cn'].includes(new URL(url).hostname))try{
+    const publicUrl=new URL(url);publicUrl.protocol='http:';requests++;
+    const {stdout}=await promisify(execFile)('curl',['--ipv4','--fail','--silent','--show-error','--location','--max-time','15',
+      '--connect-timeout','6','--user-agent','Mozilla/5.0','--referer',publicUrl.hostname.includes('szse')?'http://www.szse.cn/':'http://www.sse.com.cn/',publicUrl.toString()],{maxBuffer:2_000_000});
+    JSON.parse(stdout);return stdout;
+  }catch(e){failure=e;}
   throw Error(`${new URL(url).hostname}: ${failure}; cause=${failure?.cause??''}`);
 }
 async function em(market){
