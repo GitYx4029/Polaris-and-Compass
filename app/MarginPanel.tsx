@@ -5,7 +5,7 @@ import {validateMargin,marginSeries,marginLadder,ladderLabels,marginSources,marg
   type MarginSnapshot,type MarginPoint,type LadderKey} from "@/lib/margin";
 
 type State={snapshot:MarginSnapshot|null;points:MarginPoint[];index:number;pick:(i:number)=>void;
-  loading:boolean;error:string;refresh:()=>void;marketDate?:string};
+  loading:boolean;error:string;refresh:()=>void;marketDate?:string;ladderKey:LadderKey;setLadderKey:(key:LadderKey)=>void};
 const Context=createContext<State|null>(null);
 const useMargin=()=>{const state=useContext(Context);if(!state)throw Error("融资数据上下文缺失");return state;};
 const numeric=(value:number,digits=2)=>value.toLocaleString("zh-CN",{minimumFractionDigits:digits,maximumFractionDigits:digits});
@@ -15,6 +15,7 @@ const signed=(value:number,digits=2)=>`${value>0?"+":""}${numeric(value,digits)}
 export function MarginProvider({children,marketDate}:{children:ReactNode;marketDate?:string}){
   const [snapshot,setSnapshot]=useState<MarginSnapshot|null>(null),[loading,setLoading]=useState(true);
   const [error,setError]=useState(""),[revision,setRevision]=useState(0),[picked,setPicked]=useState<string|null>(null);
+  const [ladderKey,setLadderKey]=useState<LadderKey>("intensity20");
   useEffect(()=>{
     const controller=new AbortController();let alive=true;
     if(!snapshot)try{const cached=JSON.parse(localStorage.getItem("polaris-margin-v1")??"null");validateMargin(cached);setSnapshot(cached);}catch{/* Read verified network data. */}
@@ -43,7 +44,7 @@ export function MarginProvider({children,marketDate}:{children:ReactNode;marketD
   },[revision]);
   const points=useMemo(()=>snapshot?marginSeries(snapshot.history):[],[snapshot]);
   const selected=picked?points.findIndex(p=>p.date===picked):-1,index=selected>=0?selected:Math.max(0,points.length-1);
-  return <Context.Provider value={{snapshot,points,index,pick:i=>setPicked(points[i]?.date??null),loading,error,refresh:()=>setRevision(r=>r+1),marketDate}}>{children}</Context.Provider>;
+  return <Context.Provider value={{snapshot,points,index,pick:i=>setPicked(points[i]?.date??null),loading,error,refresh:()=>setRevision(r=>r+1),marketDate,ladderKey,setLadderKey}}>{children}</Context.Provider>;
 }
 
 type DownloadMetric="all"|"balance"|"net"|"intensity"|"growth20";
@@ -72,8 +73,8 @@ export function MarginDownload({metric="all",compact=false}:{metric?:DownloadMet
 }
 
 function LadderBadge({metric}:{metric:LadderKey}){
-  const {points,index}=useMargin();const ladder=marginLadder(points,index,metric);
-  return ladder?<a className="metric-mark neutral" href="#margin-reference">{ladderLabels[metric][ladder.band]} · P{ladder.rank.toFixed(0)}</a>:<span className="margin-muted">历史分位待积累</span>;
+  const {points,index,setLadderKey}=useMargin();const ladder=marginLadder(points,index,metric);
+  return ladder?<a className="metric-mark neutral" href="#margin-reference" onClick={()=>setLadderKey(metric)}>{ladderLabels[metric][ladder.band]} · P{ladder.rank.toFixed(0)}</a>:<span className="margin-muted">历史分位待积累</span>;
 }
 function MarginCharts(){
   const {points,index,pick}=useMargin(),[chart,setChart]=useState("balance"),[full,setFull]=useState(false);
@@ -102,16 +103,16 @@ function MarginCharts(){
   </div>;
 }
 export default function MarginPanel(){
-  const {snapshot,points,index,loading,error,refresh,marketDate}=useMargin(),p=points[index];
+  const {snapshot,points,index,loading,error,refresh,marketDate,setLadderKey}=useMargin(),p=points[index];
   return <section className="panel margin-panel" id="margin"><div className="panel-header"><div><p className="eyebrow">MARGIN FINANCING / 杠杆资金</p><h3>融资与杠杆</h3><p className="margin-subtitle">规模、增减、参与强度 · 沪深汇总，含 ETF 等融资标的</p></div>
     <div className="flow-actions"><MarginDownload/><button className="data-export icon-only" onClick={refresh} disabled={loading} aria-label="刷新融资数据"><RefreshCw size={14} className={loading?"spinning":""}/></button></div></div>
     {p&&snapshot?<><div className="margin-session"><strong>融资统计 · {p.date}</strong><span>最新完整数据 {snapshot.asOf} · {points.length} 个交易日历史</span></div>
       {marketDate&&snapshot.asOf<marketDate&&<p className="fine margin-date-note">行情日期 {marketDate}；融资汇总最新完整日期 {snapshot.asOf}。沪深按共同统计日合并，周五深市数据通常在下周一发布。</p>}
       <div className="margin-cards">
-        <article className="margin-stat"><div className="margin-stat-title">融资余额<MarginDownload metric="balance" compact/></div><div className="margin-number">{wan(p.balance)}<small>万亿元</small></div><LadderBadge metric="balance"/><p>两融总额 {wan(p.total)} 万亿元<br/>融券余额 {yi(p.short)} 亿元</p><a href="#margin-reference">规模刻度 · 解读参考</a></article>
-        <article className="margin-stat"><div className="margin-stat-title">融资净买入<MarginDownload metric="net" compact/></div><div className="margin-number">{signed(p.net/1e8)}<small>亿元</small></div><span className="metric-mark neutral">{p.streak===0?"当日净额为零":`连续 ${Math.abs(p.streak)} 日${p.streak>0?"净买入":"净偿还"}`}</span><p>近 5 日 {p.net5===undefined?"—":signed(p.net5/1e8)} 亿元<br/>近 20 日 {p.net20===undefined?"—":signed(p.net20/1e8)} 亿元</p><a href="#margin-reference">负债增减 · 解读参考</a></article>
-        <article className="margin-stat"><div className="margin-stat-title">融资交易强度<MarginDownload metric="intensity" compact/></div><div className="margin-number">{p.intensity===undefined?"—":numeric(p.intensity)}<small>% · 代理口径</small></div><LadderBadge metric="intensity20"/><p>20 日平滑值 {p.intensity20===undefined?"—":numeric(p.intensity20)}%<br/>融资买入额 ÷ 同日股票行情成交额</p><a href="#margin-reference">参与刻度 · 解读参考</a></article>
-        <article className="margin-stat"><div className="margin-stat-title">融资余额增速<MarginDownload metric="growth20" compact/></div><div className="margin-number">{p.growth20===undefined?"—":signed(p.growth20)}<small>% / 20 交易日</small></div><LadderBadge metric="growth20"/><p>相对 20 个交易日前的余额<br/>正值为扩张，负值为收缩</p><a href="#margin-reference">增速刻度 · 解读参考</a></article>
+        <article className="margin-stat"><div className="margin-stat-title">融资余额<MarginDownload metric="balance" compact/></div><div className="margin-number">{wan(p.balance)}<small>万亿元</small></div><LadderBadge metric="balance"/><p>两融总额 {wan(p.total)} 万亿元<br/>融券余额 {yi(p.short)} 亿元</p><a href="#margin-reference" onClick={()=>setLadderKey("balance")}>规模刻度 · 解读参考</a></article>
+        <article className="margin-stat"><div className="margin-stat-title">融资净买入<MarginDownload metric="net" compact/></div><div className="margin-number">{signed(p.net/1e8)}<small>亿元</small></div><span className="metric-mark neutral">{p.streak===0?"当日净额为零":`连续 ${Math.abs(p.streak)} 日${p.streak>0?"净买入":"净偿还"}`}</span><p>近 5 日 {p.net5===undefined?"—":signed(p.net5/1e8)} 亿元<br/>近 20 日 {p.net20===undefined?"—":signed(p.net20/1e8)} 亿元</p><a href="#margin-method">负债增减 · 解读参考</a></article>
+        <article className="margin-stat"><div className="margin-stat-title">融资交易强度<MarginDownload metric="intensity" compact/></div><div className="margin-number">{p.intensity===undefined?"—":numeric(p.intensity)}<small>% · 代理口径</small></div><LadderBadge metric="intensity20"/><p>20 日平滑值 {p.intensity20===undefined?"—":numeric(p.intensity20)}%<br/>融资买入额 ÷ 同日股票行情成交额</p><a href="#margin-reference" onClick={()=>setLadderKey("intensity20")}>参与刻度 · 解读参考</a></article>
+        <article className="margin-stat"><div className="margin-stat-title">融资余额增速<MarginDownload metric="growth20" compact/></div><div className="margin-number">{p.growth20===undefined?"—":signed(p.growth20)}<small>% / 20 交易日</small></div><LadderBadge metric="growth20"/><p>相对 20 个交易日前的余额<br/>正值为扩张，负值为收缩</p><a href="#margin-reference" onClick={()=>setLadderKey("growth20")}>增速刻度 · 解读参考</a></article>
       </div><MarginCharts/>
       <p className="fine margin-proxy-note"><strong>口径：</strong>融资买入包含股票、ETF 等证券；分母为腾讯沪深指数所带的股票市场成交额，因此“交易强度”是可比历史代理比值，不是严格股票融资占比，不与股票专属占比阈值混用。净偿还可来自现金还款，不等同卖股流出。</p>
       <details className="margin-audit"><summary>来源与核验 · {new Date(snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}（北京时间）</summary><p>余额与买入、偿还历史：<a href={marginSources.em} target="_blank" rel="noreferrer">东方财富交易所汇总记录</a>；<a href={marginSources.sh} target="_blank" rel="noreferrer">上交所</a>核验 {snapshot.checks.officialSh} 日的余额、买入和两融合计，<a href={marginSources.sz} target="_blank" rel="noreferrer">深交所</a>核验日 {snapshot.checks.officialSzDates.join("、")}；同日股票行情：<a href={marginSources.tencent} target="_blank" rel="noreferrer">腾讯财经</a>。源最新日期：沪 {snapshot.sourceDates.sh}、深 {snapshot.sourceDates.sz}。采集 {snapshot.checks.requests} 次请求／{snapshot.checks.seconds.toFixed(2)} 秒；独立脚本，无大模型参与。</p>{(p.sh.repayInferred||p.sz.repayInferred)&&<p>所选日使用交易所备用模式，偿还额由前日余额、买入和当日余额推算，净买入反映负债变化。深市按官方公布精度；CSV 保留沪市偿还原值及推算标记，供核对差异。</p>}</details>
@@ -126,7 +127,7 @@ const explanations:Record<LadderKey,string[]>={
   growth20:["余额变化速度处于历史低位；先看实际增幅的正负。","余额变化速度偏低；正值仍是扩张，负值才是收缩。","余额增速接近历史中间水平，不代表风险为零。","余额增速处于较高位置；结合净买入持续性观察。","余额增速处于历史高位；若为正值，说明扩张较快，并非自动卖出信号。"],
 };
 export function MarginReference(){
-  const {points,index,snapshot}=useMargin(),[key,setKey]=useState<LadderKey>("intensity20");
+  const {points,index,snapshot,ladderKey:key,setLadderKey:setKey}=useMargin();
   const ladder=useMemo(()=>marginLadder(points,index,key),[points,index,key]);
   const display=(v:number)=>key==="balance"?`${wan(v)} 万亿`:`${numeric(v,2)}%`;
   return <section className="margin-reference" id="margin-reference"><div className="margin-ref-heading"><div><p className="eyebrow">DATA LADDER / 数据阶梯</p><h4>融资与杠杆 · 阶梯参考</h4></div><span>{points[index]?.date??"等待数据"} · 与上方所选日期同步</span></div>
@@ -137,7 +138,7 @@ export function MarginReference(){
         return <li key={label} className={i===ladder.band?"active":""}><div><span className="margin-step">{i+1}</span><strong>{range}</strong><b>{label}</b>{i===ladder.band&&<em>所选日</em>}</div><p>{explanations[key][i]}</p></li>;})}</ol>
       <p className="fine">校准样本 {ladder.start}—{ladder.end}，{ladder.count} 个有效交易日，不含所选日及之后的数据。P80 表示高于约八成历史观测；区间显示值四舍五入，分档使用原始精度。历史查看不使用未来数据。</p>
     </>:<p className="empty">至少需要所选日前 252 个有效交易日，才展示阶梯。{snapshot?"可拖动上方滑轨选择近期日期。":"数据通过核验后显示。"}</p>}
-    <div className="margin-method"><strong>指标与边界</strong><p>融资净买入＝融资买入额－偿还额；近 5／20 日为完整交易日累计。净偿还可能是现金还款；两融汇总不覆盖全部场外杠杆。融资交易强度采用上方明示的代理口径，仅在相同口径历史内比较。正增幅才是余额扩张，不能仅因增速分位高就称为“快速扩张”。</p><p>原有指南针、北极星和资金温度计属于经验观察规则；新增阶梯是相对历史刻度，均不直接生成买卖指令。政策和融资标的范围变化会影响历史可比性。</p></div>
+    <div className="margin-method" id="margin-method"><strong>指标与边界</strong><p>融资净买入＝融资买入额－偿还额；近 5／20 日为完整交易日累计。净偿还可能是现金还款；两融汇总不覆盖全部场外杠杆。融资交易强度采用上方明示的代理口径，仅在相同口径历史内比较。正增幅才是余额扩张，不能仅因增速分位高就称为“快速扩张”。</p><p>原有指南针、北极星和资金温度计属于经验观察规则；新增阶梯是相对历史刻度，均不直接生成买卖指令。政策和融资标的范围变化会影响历史可比性。</p></div>
     <details className="margin-research"><summary>研究依据与来源</summary>{marginResearch.map(r=><p key={r.url}><a href={r.url} target="_blank" rel="noreferrer">{r.title}</a> · {r.date} · {r.page}<br/>{r.note}</p>)}<p><a href="https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20260114_10805178.shtml" target="_blank" rel="noreferrer">2026 年融资保证金政策调整</a>：制度变化可能影响不同阶段的指标水平，历史分位不保证预测能力。</p></details>
   </section>;
 }

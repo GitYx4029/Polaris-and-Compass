@@ -15,5 +15,6 @@ export const navigationGroups = [
   { number: "04", title: "历史与解读", links: [
     { id: "history", label: "近期交易日与下载" },
     { id: "reference", label: "指标解读参考" },
+    { id: "margin-reference", label: "融资阶梯参考" },
   ] },
 ] as const;
