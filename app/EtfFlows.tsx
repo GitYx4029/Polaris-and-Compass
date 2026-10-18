@@ -73,15 +73,15 @@ export default function EtfFlows({refreshKey,marketDate}:{refreshKey?:string;mar
     </div>
     {snapshot?<>
       <div className="flow-date"><strong>统计交易日 · {snapshot.asOf}</strong><span>已核验 {snapshot.universeCount.toLocaleString("zh-CN")} 只的数据源排名</span></div>
-      {delayed&&<p className="fine flow-delay">{marketDate} 的净流入统计尚未发布或通过核验；以下为 {snapshot.asOf} 榜单，成交额也取同日。申赎统计通常晚于收盘行情。</p>}
+      {delayed&&<p className="fine flow-delay">行情 {marketDate}；净流入榜截至 {snapshot.asOf}，成交额取同日。</p>}
       <table className="flow-table"><thead><tr><th scope="col">排名</th><th scope="col">代码 / ETF 名称</th><th scope="col">资金净流入</th><th scope="col">同日成交额</th><th scope="col"><span className="sr-only">下载</span></th></tr></thead>
-        <tbody>{snapshot.rows.map(row=><tr key={row.code}><td className="flow-rank">{String(row.rank).padStart(2,"0")}</td>
+        <tbody id="etf-ranking-rows">{snapshot.rows.slice(0,expanded?snapshot.rows.length:5).map(row=><tr key={row.code}><td className="flow-rank">{String(row.rank).padStart(2,"0")}</td>
           <td className="flow-name"><a href={`https://fund.stockstar.com/funds/${row.code}.shtml`} target="_blank" rel="noreferrer" title={row.fullName}>{row.name}</a><span>{row.code}</span></td>
           <td className="flow-amount flow-inflow"><small>净流入</small><strong>+{number(row.netInflowYi)}</strong><i style={{width:`${row.netInflowYi/snapshot.rows[0].netInflowYi*100}%`}}/></td>
           <td className="flow-amount"><small>成交额</small><strong>{number(row.turnoverYi)}</strong></td>
           <td className="flow-download"><button className="data-export icon-only" title={`下载 ${row.code} 本期数据`} aria-label={`下载 ${row.name} 数据`} onClick={()=>saveCsv([snapshot],row)}><Download size={13}/></button></td></tr>)}</tbody></table>
-      <button className="flow-mobile-more" onClick={()=>setExpanded(!expanded)}>{expanded?"收起至前 5 名":"展开全部 20 只 ETF"}</button>
-      <p className="fine flow-provenance">净流入：<a href={snapshot.sourceUrl} target="_blank" rel="noreferrer">{snapshot.source}</a>；同日成交额：腾讯财经日线。净流入采用数据源申赎估算原值，与二级市场主力资金流向、成交额分开统计。核验：{new Date(snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}（北京时间）。历史从首次成功采集起累计，最多保留 300 期。</p>
+      <button className="flow-mobile-more" aria-expanded={expanded} aria-controls="etf-ranking-rows" onClick={()=>setExpanded(!expanded)}>{expanded?"收起至前 5 名":`展开全部 ${snapshot.rows.length} 只 ETF`}</button>
+      <details className="compact-note flow-provenance"><summary>数据口径与核验</summary><p className="fine">净流入：<a href={snapshot.sourceUrl} target="_blank" rel="noreferrer">{snapshot.source}</a>；同日成交额：腾讯财经日线。净流入采用数据源申赎估算原值，与二级市场主力资金流向、成交额分开统计。核验：{new Date(snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}（北京时间）。申赎统计通常晚于收盘行情，未发布或未通过核验时保留最近合格榜单。历史从首次成功采集起累计，最多保留 300 期。</p></details>
     </>:<p className="empty">{loading?"正在读取已核验 ETF 榜单…":"ETF 榜单暂缺，请稍后刷新"}</p>}
     {error&&<p className="fine" role="status">{error}{snapshot?"；保留上次核验结果。":"。"}</p>}
   </section>;

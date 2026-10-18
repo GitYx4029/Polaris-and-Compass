@@ -333,3 +333,120 @@ html{scroll-behavior:smooth}
 .margin-range-tabs{display:flex;gap:7px;margin:-3px 0 14px}
 .margin-range-tabs button{font-size:12px;color:#a2ccba;border:1px solid #416559;background:#102e28;border-radius:6px;padding:5px 9px}
 .margin-range-tabs button[aria-pressed=true]{color:#effff3;background:#275543;border-color:#78bc9b}
+
+/* Compact reading: keep the figures visible and reveal detail on demand. */
+[hidden]{display:none!important}
+.compact-layout{padding-top:22px}
+.compact-layout .intro{margin-bottom:15px;align-items:center}
+.compact-layout .intro h1{font-size:27px}
+.compact-layout .intro .eyebrow{display:none}
+.compact-layout .observation-group{margin-top:22px}
+.compact-layout .panel{padding:20px 22px}
+.compact-layout .panel-header{margin-bottom:16px}
+.compact-layout .daily-quote{align-items:flex-start;margin-bottom:18px}
+.quote-preview{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.quote-details{font-size:12px;color:#9fc6bb;margin-top:5px}
+.quote-details summary{cursor:pointer;min-height:24px;line-height:24px}
+.quote-details p{margin:9px 0 6px}
+.quote-details .quote-note{display:block;margin:4px 0 0}
+.compact-layout .overview-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.compact-layout .overview-metrics .metric{min-height:0;padding:18px 16px;display:flex;flex-direction:column;overflow:visible}
+.overview-metrics .metric-title{font-size:15px;align-items:center;min-height:30px}
+.overview-metrics .big{font-size:clamp(31px,3.5vw,45px);margin:12px 0 7px;letter-spacing:-.04em;overflow-wrap:anywhere}
+.overview-metrics .big span{font-size:13px;margin-left:5px;white-space:nowrap}
+.overview-metrics .margin-overview .big{font-size:clamp(27px,3vw,38px)}
+.overview-note{font-size:13px;line-height:1.55;color:#a8c9bd;margin:0 0 4px;font-variant-numeric:tabular-nums}
+.overview-metrics .metric-actions{margin-top:auto;padding-top:12px;gap:8px 12px}
+.overview-metrics .metric-actions a{font-size:13px}
+.overview-baseline{display:flex;align-items:center;gap:6px;color:#a8c9bd;font-size:12px;line-height:1.5;margin-top:6px;flex-wrap:wrap}
+.overview-baseline b{color:#e6f8ee;font-size:15px;font-variant-numeric:tabular-nums}
+.overview-metrics .data-export.icon-only{width:30px;height:30px}
+.compact-fold>summary{cursor:pointer;list-style:none;position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-right:30px;min-height:40px;color:#dff3e9}
+.compact-fold>summary::-webkit-details-marker{display:none}
+.compact-fold>summary::after{content:"＋";position:absolute;right:0;top:50%;transform:translateY(-50%);color:#89d9c1;font-size:21px;font-weight:400}
+.compact-fold[open]>summary::after{content:"−"}
+.compact-fold>summary>strong{font-size:16px}
+.compact-fold>summary>span{font-size:13px;color:#9cbfb1;line-height:1.5}
+.fold-content{padding-top:16px}
+.compact-note{font-size:13px;color:#9abcae;margin-top:12px;line-height:1.6}
+.compact-note>summary{cursor:pointer;min-height:36px;padding:6px 0;color:#99d5c1}
+.compact-note p{margin-top:8px}
+.compact-fold>summary:focus-visible,.compact-note>summary:focus-visible,.trend-view-tabs button:focus-visible{outline:2px solid #8cead0;outline-offset:4px;border-radius:4px}
+.compact-layout .margin-panel{padding-top:12px;padding-bottom:12px;margin-bottom:0}
+.compact-layout .margin-panel .panel-header{margin-bottom:14px}
+.compact-layout .depth-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.compact-layout .depth-row{display:flex;flex-direction:column;align-items:stretch;gap:9px;border:1px solid #31504d;border-radius:9px;padding:13px;min-width:0}
+.compact-layout .depth-heading{align-items:flex-start;flex-direction:column;gap:4px}
+.compact-layout .depth-name strong{font-size:16px}
+.compact-layout .depth-name small{font-size:12px;line-height:1.5}
+.compact-layout .depth-heading .metric-mark{font-size:11px;padding:2px 6px}
+.compact-layout .depth-data{text-align:left;margin-top:auto;position:relative;padding-right:32px}
+.compact-layout .depth-data b{font-size:27px;line-height:1.2;overflow-wrap:anywhere}
+.compact-layout .depth-data>span{font-size:12px}
+.compact-layout .depth-data .data-export{position:absolute;right:0;bottom:0;width:30px;height:30px;margin:0}
+.compact-layout .depth-bar{height:5px;min-height:5px}
+.compact-layout .scope-note{font-size:12px;margin-top:8px}
+.compact-layout .market-audit{margin-top:6px}
+.trend-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+.trend-heading h3{font-size:20px;margin:0}.trend-heading>span{font-size:13px;color:#97b9ac}
+.trend-view-tabs{display:flex;gap:7px;border-bottom:1px solid #31524c;padding-bottom:14px;margin-bottom:18px}
+.trend-view-tabs button{min-height:40px;padding:8px 16px;border:1px solid #3e665b;border-radius:8px;background:#14332f;color:#a7cdbb;font-size:15px;white-space:nowrap}
+.trend-view-tabs button[aria-pressed=true]{border-color:#75cdb2;background:#285447;color:#effff5}
+.trend-explorer .multi-trend{padding:0;background:none;border:0;margin:0}
+.trend-explorer .multi-trend .eyebrow{display:none}
+.trend-explorer .chart-tabs{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;padding:3px 2px 9px;margin-bottom:12px;scrollbar-width:thin;scrollbar-color:#4b9b86 transparent}
+.trend-explorer .chart-tabs button{white-space:nowrap;min-height:38px}
+.trend-explorer .margin-chart-area{margin:0;padding:0;border:0}
+.trend-explorer .margin-chart-heading{display:none}
+.trend-explorer .margin-chart-tabs{display:flex;gap:8px;margin-bottom:12px}
+.trend-explorer .margin-chart-tabs button{padding:7px 12px;min-height:36px;border:1px solid #42695e;border-radius:7px;background:#133630;color:#b4dbca;font-size:14px}
+.trend-explorer .margin-chart-tabs button[aria-pressed=true]{background:#245245;border-color:#7bceb2;color:#f0fff6}
+.trend-explorer .margin-charts{display:block}
+.trend-explorer .margin-chart:not(.is-active){display:none}
+.trend-explorer .margin-chart svg{height:210px}
+.trend-explorer .panel-header h3{font-size:17px}
+.trend-explorer .panel-actions{margin-top:0}
+.compact-layout .flow-mobile-more{display:block;width:100%;padding:11px;border:1px solid #3c655c;background:#153630;color:#a9ead5;font-size:14px;border-radius:8px;margin-top:12px}
+.compact-layout .flow-date{margin-bottom:9px;padding:8px 10px}
+.compact-layout .flow-provenance{margin-top:5px}
+.history-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.history-records{border-top:1px solid #31534b;padding-top:8px}
+.history-records .history-unit{font-size:13px;line-height:1.6;margin-bottom:12px}
+.compact-layout .guide-groups{align-items:start}
+.compact-layout .guide-block{padding:13px 15px;min-width:0}
+.compact-layout .guide-block>summary{display:block;min-height:115px;padding:0 22px 0 0}
+.compact-layout .guide-block>summary>span{display:block}
+.compact-layout .guide-block>summary>h4{font-size:19px;margin:5px 0 8px}
+.compact-layout .guide-block .guide-current{font-size:13px;color:#b9e7d1;line-height:1.5}
+.compact-layout .guide-block .fold-hint{font-size:12px;color:#85b7a4;margin-top:6px}
+.compact-layout .guide-description{min-height:0;margin-bottom:12px}
+.compact-layout .margin-reference{margin-top:14px;padding-top:10px}
+.compact-layout .indicator-reference{margin-top:12px;padding-top:6px;font-size:13px}
+.compact-layout .guide footer{margin-top:8px;font-size:13px}
+.compact-layout .reference-credit{font-size:13px;margin-bottom:13px}
+.compact-layout .reference-section-label{font-size:13px;margin-top:12px}
+.floating-toc .toc-groups>li{margin-top:3px;padding-top:0;border:0}
+.floating-toc .toc-groups a{padding:11px 10px;font-size:15px}
+.floating-toc a[aria-current=location]{background:#20483f;color:#e7fff2}
+.floating-toc a small{margin-left:auto;font-size:11px;color:#8ee7c5;white-space:nowrap}
+@media(max-width:1050px){.compact-layout .overview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-metrics .big{font-size:43px}.overview-metrics .margin-overview .big{font-size:38px}}
+@media(max-width:800px){.compact-layout .intro{flex-direction:row;align-items:flex-start}.compact-layout .intro h1{font-size:24px}.compact-layout .freshness{font-size:13px;white-space:normal}.compact-layout .schedule-hint{font-size:12px}.compact-layout .status-col{align-items:flex-end}.compact-layout .guide-block>summary{min-height:115px}.compact-layout .daily-quote{display:block}}
+@media(max-width:650px){
+  .compact-layout .panel{padding:17px 15px}.compact-layout .overview-metrics{gap:10px}
+  .compact-layout .overview-metrics .metric{padding:13px 12px}.overview-metrics .metric-title{font-size:14px;align-items:center;flex-direction:row;gap:4px}
+  .overview-metrics .big{font-size:36px;margin-top:9px}.overview-metrics .margin-overview .big{font-size:29px}
+  .overview-metrics .big span{display:block;margin:2px 0 0;font-size:12px;letter-spacing:0}
+  .overview-metrics .overview-note{font-size:12px}.overview-metrics .metric-actions a{font-size:12px}
+  .overview-metrics .metric-mark{font-size:11px;padding:2px 6px}
+  .overview-baseline{font-size:11px;gap:4px}.overview-baseline b{font-size:14px}
+  .compact-layout .depth-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .compact-layout .depth-row{padding:11px;gap:8px}.compact-layout .depth-data{padding-right:30px}.compact-layout .depth-data b{font-size:23px}
+  .compact-layout .depth-name strong{font-size:15px}.compact-layout .depth-name small{font-size:12px}
+  .compact-fold>summary{align-items:flex-start;flex-direction:column;justify-content:center;gap:3px;min-height:44px}
+  .compact-layout .margin-panel{padding-top:10px;padding-bottom:10px}
+  .trend-heading>span{font-size:12px}.trend-view-tabs{gap:6px}.trend-view-tabs button{flex:1;min-width:0;padding:8px 7px;font-size:13px}
+  .trend-explorer .panel-header{gap:10px}.trend-explorer .line-frame>svg,.trend-explorer .margin-chart svg{height:190px}
+  .history-actions .download,.history-actions .data-export{font-size:13px;min-height:38px}
+  .compact-layout .history .panel-header{gap:12px}.compact-layout .fine{font-size:13px}
+}
+@media(max-width:360px){.overview-metrics .margin-overview .big{font-size:25px}.overview-metrics .big{font-size:32px}.compact-layout .depth-data b{font-size:21px}.compact-layout .intro{flex-direction:column;gap:8px}.compact-layout .status-col{align-items:flex-start}}
