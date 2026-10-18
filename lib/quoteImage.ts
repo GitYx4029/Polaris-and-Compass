@@ -106,10 +106,14 @@ export async function saveQuotePng(card: ShareImage): Promise<void> {
   ctx.textAlign = "right";
   ctx.fillText("powered by C.Luo w/ChatGPT", width - pad, height - 60);
 
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(
+    value => value ? resolve(value) : reject(new Error("PNG 图片编码失败，请重试")), "image/png"));
+  const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
-  anchor.href = canvas.toDataURL("image/png");
+  anchor.href = url;
   anchor.download = `大A观测助手_投资观点_${card.date}.png`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

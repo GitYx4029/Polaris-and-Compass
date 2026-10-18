@@ -584,7 +584,7 @@ export default function Home() {
           {metric:"total",label:"沪深两市",value:latest?.total,note:"沪市＋深市",mark:relativeMark(latest?.total,prev?.total,comparable)},
           {metric:"sh",label:"上证市场",value:latest?.sh,note:"包含科创板",mark:relativeMark(latest?.sh,prev?.sh,comparable)},
           {metric:"sz",label:"深证市场",value:latest?.sz,note:"沪深合计的深市部分",mark:relativeMark(latest?.sz,prev?.sz,comparable)},
-          {metric:"star",label:"科创板",value:latestDetail?.star,note:"沪市子集 · 上交所分类成交",mark:relativeMark(latestDetail?.star,prevDetail?.star,detailComparable)},
+          {metric:"star",label:"科创板",value:latestDetail?.star,note:latestDetail?.starSource?.includes("浏览器补采")?"竞价口径参考 · 待交易所核对":"沪市子集 · 上交所分类成交",mark:relativeMark(latestDetail?.star,prevDetail?.star,detailComparable)},
           {metric:"etf",label:"沪深 ETF",value:latestDetail?.etf,note:"场内 ETF · 含 510300",mark:relativeMark(latestDetail?.etf,prevDetail?.etf,etfComparable)},
           {metric:"etf510300",label:"510300",value:etf300??undefined,note:"沪深300ETF华泰柏瑞 · ETF 总额子集",mark:relativeMark(etf300,prevEtf300,comparable)}
         ].map((item,index)=><div className={`depth-row depth-${index}`} key={item.label}><div className="depth-name"><div className="depth-heading"><strong>{item.label}</strong>{item.mark&&<span className="metric-mark neutral">{item.mark}</span>}</div><small>{item.note}</small></div>

@@ -12,7 +12,8 @@ export default function FloatingToc() {
       cancelAnimationFrame(frame);
       frame=requestAnimationFrame(()=>{
         const seen=navigationGroups.filter(group=>(document.getElementById(group.id)?.getBoundingClientRect().top??Infinity)<=140);
-        setActive((seen.at(-1)??navigationGroups[0]).id);
+        const atBottom=window.scrollY+window.innerHeight>=document.documentElement.scrollHeight-4;
+        setActive((atBottom?navigationGroups.at(-1)!:seen.at(-1)??navigationGroups[0]).id);
       });
     };
     const reveal=(hash:string)=>{
