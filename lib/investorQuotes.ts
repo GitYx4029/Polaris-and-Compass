@@ -343,7 +343,7 @@ const originalQuotes: InvestorQuote[] = [
   { id: 18, author: "段永平", text: "把关注点放在企业未来现金流，而不只看价格变化。", source: "雪球《段永平投资问答录·投资逻辑篇》", locator: "p.11", url: `${duan}#page=11` },
 ];
 
-export const investorQuotes: InvestorQuote[] = [
+const baseQuotes: InvestorQuote[] = [
   ...originalQuotes,
   ...marksHighlights.map(([locator,text],index)=>({id:originalQuotes.length+index+1,
     author:"霍华德·马克斯",text,source:"橡树资本《The Best of…》备忘录索引",locator,url:marks})),
@@ -357,8 +357,46 @@ export const investorQuotes: InvestorQuote[] = [
     author:"霍华德·马克斯",text,source:`橡树资本《${memo==="debt"?"The Impact of Debt":"Easy Money"}》`,locator,url:`https://www.oaktreecapital.com/insights/memo/${memo==="debt"?"the-impact-of-debt":"easy-money"}`}))
 ];
 
-// 120 cited entries about compounding, patience, market psychology and
-// investing discipline. Preserve the complete 301-entry export unchanged.
+// New entries are short summaries of Duan's own posts or page-checked Q&A.
+// The original 301 records and their IDs remain intact for CSV exports.
+const duanPosts: Array<[string,string,string]> = [
+  ["133966357","2019-10-13；正文首段","保持平常心，也包括理性地面对自己。"],
+  ["164451204","正文首段：平常心","减少外界干扰，把注意力拉回事物本身。"],
+  ["133182073","正文首段：本分与平常心","本分既是选对方向，也是把事情做好。"],
+  ["372535264","2026-01-23；正文第 1 段","用十年的尺度考虑投资，别只追逐眼前的风口。"],
+  ["372535264","2026-01-23；正文第 2 段","有长期持有的准备，不等于实际必须持有满十年。"],
+  ["405540618","2026-08-19 更新；正文首段","机会成本与自身认知有关，不宜照搬别人的收益率。"],
+  ["161432784","正文首段：机会成本","投资是否合算，要与自己最好的替代选择比较。"],
+  ["164983566","2020-12-05；正文","杠杆会放大风险，先问最坏结果能否承受。"],
+  ["210492981","正文：对两家公司理解程度的比较","先弄清自己懂哪家公司，再谈哪只股票涨得更快。"],
+  ["125931010","正文首段：小公司的投资原则","研究小公司，同样要先看商业模式与发展前景。"],
+  ["381736236","2026-03-30；正文首段","看企业未来创造的总量，不只盯一时的增长速度。"],
+  ["219496601","2022-05-10；正文","很想加杠杆时，更应重温不用杠杆的理由。"],
+  ["344310407","2025-07-27；正文","不必每家公司都看对，要把握真正看懂的机会。"],
+  ["389716957","2026-05-19；正文","比较投资机会前，先用基准回报作第一道过滤。"],
+];
+const duanBookHighlights: Array<[number,string]> = [
+  [24,"一次错误也可能耗尽现金，错失后续机会。"],
+  [138,"能力圈要对自己诚实，分清懂与不懂。"],
+  [164,"读财报，先排除不愿投资的公司。"],
+  [180,"回购或增持本身，不足以证明低估。"],
+  [199,"估值靠长期理解，不靠神秘公式。"],
+  [230,"低市盈率，替代不了对未来盈利的判断。"],
+  [236,"卖出不应只因赚了钱，买入不看过去高点。"],
+  [253,"已经付出的成本，不值得再赔上时间。"],
+  [305,"投资先保购买力，别为高回报乱冒险。"],
+  [180,"利润再投好生意，比单看分红更重要。"],
+];
+export const investorQuotes: InvestorQuote[] = [
+  ...baseQuotes,
+  ...duanPosts.map(([post,locator,text],i)=>({id:baseQuotes.length+i+1,author:"段永平",text,
+    source:"段永平雪球公开答问（本人账号：大道无形我有型）",locator,url:`https://xueqiu.com/1247347556/${post}`})),
+  ...duanBookHighlights.map(([page,text],i)=>({id:baseQuotes.length+duanPosts.length+i+1,author:"段永平",text,
+    source:"雪球《段永平投资问答录·投资逻辑篇》",locator:`PDF 第 ${page} 页`,url:`${duan}#page=${page}`})),
+];
+
+// Investing-focused lines continue to rotate on two of the five other days.
+
 const investingFocusIds = new Set([
   2,4,11,14,15,19,20,22,24,26,27,36,37,38,39,41,42,47,49,57,
   59,63,64,65,68,69,80,82,85,89,90,91,92,95,97,99,100,113,114,120,
@@ -370,16 +408,25 @@ const investingFocusIds = new Set([
   106,108
 ]);
 const quoteOrder=(id:number)=>(id*73)%307;
-const focusedIndices=investorQuotes.map((q,i)=>investingFocusIds.has(q.id)?i:-1)
+const focusedIndices=investorQuotes.map((q,i)=>q.author!=="段永平"&&investingFocusIds.has(q.id)?i:-1)
   .filter(i=>i>=0).sort((a,b)=>quoteOrder(investorQuotes[a].id)-quoteOrder(investorQuotes[b].id));
-const otherIndices=investorQuotes.map((q,i)=>investingFocusIds.has(q.id)?-1:i)
+const otherIndices=investorQuotes.map((q,i)=>q.author!=="段永平"&&!investingFocusIds.has(q.id)?i:-1)
   .filter(i=>i>=0).sort((a,b)=>quoteOrder(investorQuotes[a].id)-quoteOrder(investorQuotes[b].id));
 
+const duanIndices=investorQuotes.map((q,i)=>q.author==="段永平"?i:-1).filter(i=>i>=0);
+const wrap=(value:number,length:number)=>(value%length+length)%length;
+
 export function quoteIndexAt(timestampMs: number): number {
+  if(!Number.isFinite(timestampMs))throw new RangeError("观点日期无效");
   const day=Math.floor((timestampMs+8*60*60*1000)/86_400_000);
-  const cycle=Math.floor(day/5),position=day%5;
-  // Two days in each five-day block feature an investing-focused line.
-  if(position===0||position===3)
-    return focusedIndices[(cycle*2+(position===3?1:0))%focusedIndices.length];
-  return otherIndices[(cycle*3+(position===4?2:position-1))%otherIndices.length];
+  const weekday=wrap(day+3,7); // Monday = 0, using the Beijing calendar date.
+  const week=Math.floor((day-4)/7); // 1970-01-05 was a Monday.
+  // Every Monday and Thursday use different Duan entries. All 30 rotate
+  // sequentially, so these slots do not repeat within a 15-week cycle.
+  if(weekday===0||weekday===3)
+    return duanIndices[wrap(week*2+(weekday===3?1:0),duanIndices.length)];
+  if(weekday===1||weekday===4)
+    return focusedIndices[wrap(week*2+(weekday===4?1:0),focusedIndices.length)];
+  const slot=weekday===2?0:weekday===5?1:2;
+  return otherIndices[wrap(week*3+slot,otherIndices.length)];
 }

@@ -97,3 +97,29 @@ assert.throws(()=>summarizeEtf([{requested:etfSymbols.slice(1),quotes:etfQuotes}
 const mismatched=new Map(etfQuotes);mismatched.set('sh500000',browserQuote('sh500000').replace('200000000','100000000'));
 assert.throws(()=>summarizeEtf([{requested:etfSymbols,quotes:mismatched}], '2026-09-29',20),/交叉核对/);
 console.log('self-check: Tencent amount/date, mismatched close, rolling20, Beijing schedule, stale-session skip and quote alignment');
+
+// Quote rotation is local calendar logic: no scheduled AI or network is needed.
+const {investorQuotes,quoteIndexAt}=await import('../lib/investorQuotes.ts');
+assert.equal(new Set(investorQuotes.map(q=>q.id)).size,investorQuotes.length);
+assert.equal(new Set(investorQuotes.map(q=>q.text)).size,investorQuotes.length);
+assert.equal(investorQuotes.filter(q=>q.author==='段永平').length,30);
+assert.ok(investorQuotes.every(q=>q.source&&q.locator&&/^https:\/\//.test(q.url)));
+const dayMs=86400000;
+const monday=Date.parse('2019-12-30T12:00:00+08:00');
+for(let w=0;w<1100;w++){
+  const indices=Array.from({length:7},(_,d)=>quoteIndexAt(monday+(w*7+d)*dayMs));
+  assert.ok(indices.every(i=>Number.isInteger(i)&&i>=0&&i<investorQuotes.length));
+  const authors=indices.map(i=>investorQuotes[i].author);
+  assert.equal(authors.filter(a=>a==='段永平').length,2);
+  assert.equal(authors[0],'段永平');assert.equal(authors[3],'段永平');
+  assert.equal(new Set(indices).size,7);
+  for(let d=0;d<7;d++){
+    const start=monday+(w*7+d)*dayMs-12*3600000;
+    assert.equal(quoteIndexAt(start),indices[d]);
+    assert.equal(quoteIndexAt(start+dayMs-1),indices[d]);
+  }
+}
+const duanCycle=Array.from({length:15},(_,w)=>[0,3].map(d=>quoteIndexAt(monday+(w*7+d)*dayMs))).flat();
+assert.equal(new Set(duanCycle).size,30);
+assert.throws(()=>quoteIndexAt(NaN),RangeError);
+console.log('quote self-check: 1,100 Beijing weeks; two distinct Duan entries every Monday/Thursday; midnight boundaries; 15-week nonrepeat cycle');
