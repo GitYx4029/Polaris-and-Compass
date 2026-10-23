@@ -2654,19 +2654,19 @@
     {
       "schemaVersion": 1,
       "asOf": "2026-10-22",
-      "generatedAt": "2026-10-23T05:59:55.466Z",
+      "generatedAt": "2026-10-23T09:32:16.299Z",
       "source": "证券之星 ETF 数据宝",
       "sourceUrl": "https://fund.stockstar.com/etf/detail",
       "method": "数据源净申购赎回估算原值，非二级市场主力资金流向",
       "rankingUrl": "https://fund.stockstar.com/etf/data/GetBBChartDatas?count=20",
-      "universeCount": 1684,
-      "rankingDigest": "69b2548adf3ebe9fd045321674a7f135f9cba0242cc9bd752f9ec53e9bd1ad40",
+      "universeCount": 1685,
+      "rankingDigest": "bce404979a7b648a5d8d83fc54031449e612db13d18b19dd451ff4cd6d53f2f4",
       "checks": {
         "rankingMatched": 20,
         "turnoverDateMatched": 20,
         "fundTypeConfirmed": 20,
-        "sameDateCrossChecks": 20,
-        "providerRecords": 1686,
+        "sameDateCrossChecks": 0,
+        "providerRecords": 1687,
         "deduplicated": 2
       },
       "rows": [
@@ -2678,9 +2678,9 @@
           "netInflowYi": 104.51,
           "turnoverYi": 146.270944,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510300&param=sh510300%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 2,
@@ -2690,9 +2690,9 @@
           "netInflowYi": 94.91,
           "turnoverYi": 105.881873,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159919&param=sz159919%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 3,
@@ -2702,9 +2702,9 @@
           "netInflowYi": 66.53,
           "turnoverYi": 137.346977,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh588000&param=sh588000%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 4,
@@ -2714,9 +2714,9 @@
           "netInflowYi": 55.46,
           "turnoverYi": 139.347019,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159915&param=sz159915%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 5,
@@ -2726,9 +2726,9 @@
           "netInflowYi": 45.25,
           "turnoverYi": 68.083901,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510050&param=sh510050%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 6,
@@ -2738,9 +2738,9 @@
           "netInflowYi": 35.73,
           "turnoverYi": 40.540738,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510330&param=sh510330%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 7,
@@ -2750,9 +2750,9 @@
           "netInflowYi": 33.18,
           "turnoverYi": 50.949234000000004,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh512100&param=sh512100%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 8,
@@ -2762,9 +2762,9 @@
           "netInflowYi": 23.57,
           "turnoverYi": 60.688701,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510500&param=sh510500%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 9,
@@ -2774,9 +2774,9 @@
           "netInflowYi": 16.6,
           "turnoverYi": 752.153061,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh511360&param=sh511360%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 10,
@@ -2786,9 +2786,9 @@
           "netInflowYi": 13.82,
           "turnoverYi": 39.124918,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159949&param=sz159949%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 11,
@@ -2798,9 +2798,9 @@
           "netInflowYi": 9.72,
           "turnoverYi": 39.487798,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh511130&param=sh511130%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 12,
@@ -2810,9 +2810,9 @@
           "netInflowYi": 9.3,
           "turnoverYi": 61.379540000000006,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh511090&param=sh511090%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 13,
@@ -2822,9 +2822,9 @@
           "netInflowYi": 8.8,
           "turnoverYi": 91.59713,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh511190&param=sh511190%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 14,
@@ -2834,9 +2834,9 @@
           "netInflowYi": 7.78,
           "turnoverYi": 32.605878000000004,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh513180&param=sh513180%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 15,
@@ -2846,9 +2846,9 @@
           "netInflowYi": 7.12,
           "turnoverYi": 70.34629100000001,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh511110&param=sh511110%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 16,
@@ -2858,9 +2858,9 @@
           "netInflowYi": 6.7,
           "turnoverYi": 21.247702,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159952&param=sz159952%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 17,
@@ -2870,9 +2870,9 @@
           "netInflowYi": 5.62,
           "turnoverYi": 28.951576,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh513130&param=sh513130%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 18,
@@ -2882,9 +2882,9 @@
           "netInflowYi": 5.52,
           "turnoverYi": 21.713708,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh588080&param=sh588080%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 19,
@@ -2894,9 +2894,9 @@
           "netInflowYi": 5.49,
           "turnoverYi": 70.513747,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh511070&param=sh511070%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         },
         {
           "rank": 20,
@@ -2906,14 +2906,14 @@
           "netInflowYi": 4.96,
           "turnoverYi": 58.198409999999996,
           "turnoverDate": "2026-10-22",
-          "providerQuoteDate": "2026-10-22",
+          "providerQuoteDate": "2026-10-23",
           "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh511200&param=sh511200%2Cday%2C%2C%2C40%2Cqfq",
-          "sameDateCrossCheck": true
+          "sameDateCrossCheck": false
         }
       ],
       "collection": {
         "requests": 23,
-        "seconds": 4.87
+        "seconds": 4.24
       }
     }
   ]
