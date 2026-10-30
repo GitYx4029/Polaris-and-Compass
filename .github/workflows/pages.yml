@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   build:
+    if: vars.ENABLE_GITHUB_PAGES == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

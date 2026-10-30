@@ -4,7 +4,7 @@
 const owner='GitYx4029';
 const repository='Polaris-and-Compass';
 const workflow='collect-market.yml';
-const snapshotUrl=`https://raw.githubusercontent.com/${owner}/${repository}/main/public/data/market-snapshot.json`;
+const snapshotUrl="https://a-share-pulse-lxy-0924.reagan-park-6434.chatgpt.site/api/data/market-snapshot.json";
 const dispatchUrl=`https://api.github.com/repos/${owner}/${repository}/actions/workflows/${workflow}/dispatches`;
 
 function beijing(at){

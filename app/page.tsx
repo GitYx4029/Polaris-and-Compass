@@ -11,6 +11,7 @@ import EtfFlows from "./EtfFlows";
 import FloatingToc from "./FloatingToc";
 import MarginPanel, { MarginProvider, MarginReference, MarginDownload, MarginOverview, MarginTrendPanel } from "./MarginPanel";
 import { navigationGroups } from "@/lib/navigation";
+import { dataUrls } from "@/lib/dataDelivery";
 
 function ObservationHeading({index}:{index:number}) {
   const group=navigationGroups[index];
@@ -75,10 +76,8 @@ function browserKline(symbol: "sh000001"|"sz399001"|"sh510300") {
   });
 }
 
-const snapshotRemote="https://gityx4029.github.io/Polaris-and-Compass/data/market-snapshot.json";
 async function fetchSnapshot():Promise<Snapshot|null>{
-  const path=window.location.hostname.endsWith(".github.io")
-    ? "/Polaris-and-Compass/data/market-snapshot.json":"/api/snapshot";
+  const path=dataUrls("market-snapshot.json")[0];
   const read=async(url:string)=>{
     const response=await fetch(`${url}?t=${Date.now()}`,{cache:"no-store",signal:AbortSignal.timeout(8000)});
     if(!response.ok)throw new Error(`快照 ${response.status}`);
@@ -90,7 +89,7 @@ async function fetchSnapshot():Promise<Snapshot|null>{
     return value;
   };
   try{return await read(path)}
-  catch {if(path!=="/api/snapshot")return null;try{return await read(snapshotRemote)}catch{return null}}
+  catch {return null}
 }
 
 function resultFromSnapshot(snapshot:Snapshot):Result {

@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 # The market collector shares this group, preventing competing snapshot pushes.
 concurrency:
@@ -55,3 +56,5 @@ jobs:
             git pull --rebase origin main
             git push
           fi
+      - name: Publish verified public data to Site
+        run: node scripts/publish-site-data.mjs etf-flows.json etf-flows-history.json

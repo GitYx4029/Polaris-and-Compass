@@ -57,9 +57,11 @@ jobs:
             git push
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
+      - name: Publish verified public data to Site
+        run: node scripts/publish-site-data.mjs market-snapshot.json
   publish:
     needs: collect
-    if: needs.collect.outputs.changed == 'true'
+    if: needs.collect.outputs.changed == 'true' && vars.ENABLE_GITHUB_PAGES == 'true'
     uses: ./.github/workflows/pages.yml
     permissions:
       contents: read

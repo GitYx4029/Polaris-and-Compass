@@ -1,21 +1,16 @@
 "use client";
 import {useCallback,useEffect,useState} from "react";
 import {Download,RefreshCw} from "lucide-react";
+import {dataUrls} from "@/lib/dataDelivery";
 import {navigationGroups} from "@/lib/navigation";
 import {validEtfFlows,type EtfFlowSnapshot,type EtfFlowRow} from "@/lib/etfFlows";
 
-const root="https://raw.githubusercontent.com/GitYx4029/Polaris-and-Compass/main/public/data/";
-const apiRoot="https://api.github.com/repos/GitYx4029/Polaris-and-Compass/contents/public/data/";
 async function readFile(name:string):Promise<unknown>{
-  // Data commits are served directly: collection never needs a site rebuild.
-  const stamp=Date.now();
-  for(const base of [root,apiRoot,"/Polaris-and-Compass/data/"]){
+  for(const url of dataUrls(name)){
     try{
-      const response=await fetch(`${base}${name}?t=${stamp}`,{cache:"no-store",
-        headers:base===apiRoot?{Accept:"application/vnd.github.raw+json"}:undefined,
-        signal:AbortSignal.timeout(7000)});
+      const response=await fetch(`${url}?t=${Date.now()}`,{cache:"no-store",signal:AbortSignal.timeout(7000)});
       if(response.ok)return await response.json();
-    }catch{/* Try the next public delivery path. */}
+    }catch{/* Keep the previously verified data visible. */}
   }
   throw new Error("ETF 榜单暂时无法读取");
 }

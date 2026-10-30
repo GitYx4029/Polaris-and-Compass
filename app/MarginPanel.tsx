@@ -1,5 +1,6 @@
 "use client";
 import {createContext,useContext,useEffect,useMemo,useState,type CSSProperties,type ReactNode} from "react";
+import {dataUrls} from "@/lib/dataDelivery";
 import {Download,RefreshCw} from "lucide-react";
 import {validateMargin,marginSeries,marginLadder,ladderLabels,marginSources,marginResearch,
   type MarginSnapshot,type MarginPoint,type LadderKey} from "@/lib/margin";
@@ -21,13 +22,8 @@ export function MarginProvider({children,marketDate}:{children:ReactNode;marketD
     if(!snapshot)try{const cached=JSON.parse(localStorage.getItem("polaris-margin-v1")??"null");validateMargin(cached);setSnapshot(cached);}catch{/* Read verified network data. */}
     const run=async()=>{
       setLoading(true);let success=false;
-      for(const url of [
-        "https://raw.githubusercontent.com/GitYx4029/Polaris-and-Compass/main/public/data/margin.json",
-        "https://api.github.com/repos/GitYx4029/Polaris-and-Compass/contents/public/data/margin.json",
-        "/Polaris-and-Compass/data/margin.json",
-      ])try{
+      for(const url of dataUrls("margin.json"))try{
         const result=await fetch(`${url}?v=${Math.floor(Date.now()/60000)}`,{cache:"no-store",
-          headers:url.includes("api.github")?{Accept:"application/vnd.github.raw+json"}:undefined,
           signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6000)])});
         if(!result.ok)throw Error(`HTTP ${result.status}`);
         const next:unknown=await result.json();validateMargin(next);

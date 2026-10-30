@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: market-collection
@@ -52,3 +53,5 @@ jobs:
             git pull --rebase origin main
             git push
           fi
+      - name: Publish verified public data to Site
+        run: node scripts/publish-site-data.mjs margin.json

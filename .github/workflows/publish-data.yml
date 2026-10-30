@@ -1,0 +1,31 @@
+name: Publish verified data to public Site
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-data.yml'
+      - 'scripts/publish-site-data.mjs'
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: market-collection
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all committed public datasets
+        run: |
+          node scripts/verify-market.mjs
+          node scripts/verify-etf-flows.mjs
+          node --experimental-strip-types scripts/verify-margin.mjs
+      - name: Publish and read back without exposing repository credentials
+        run: node scripts/publish-site-data.mjs market-snapshot.json etf-flows.json etf-flows-history.json margin.json

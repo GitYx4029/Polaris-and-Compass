@@ -73,3 +73,9 @@ GitHub Actions 的 `schedule` 可能延迟或不触发。网页在完整收盘�
 - 离线回归：`node --experimental-strip-types scripts/margin-self-check.mjs`；数据验证：`node --experimental-strip-types scripts/verify-margin.mjs`。CI 在网页发布和融资采集前运行检查。
 
 备用路径现场检查可使用 `MARGIN_EXCHANGE_ONLY=1`，并通过 `MARGIN_OUTPUT_DIR` 指定隔离测试目录。该模式不将官方偿还原值的权益调整差异隐藏为真实现金流。
+
+## 私有仓库与公开网站
+
+成品入口：https://a-share-pulse-lxy-0924.reagan-park-6434.chatgpt.site
+
+后续协作、发布与数据更新说明见 [PRIVATE_HOSTING.md](docs/PRIVATE_HOSTING.md)。GitHub Pages 已改为显式可选，不是默认发布入口。
