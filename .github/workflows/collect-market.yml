@@ -27,7 +27,7 @@ jobs:
   collect:
     runs-on: ubuntu-latest
     concurrency:
-      group: market-collection
+      group: equity-market-collection
       cancel-in-progress: false
     outputs:
       changed: ${{ steps.save.outputs.changed }}
@@ -46,17 +46,7 @@ jobs:
         run: node scripts/verify-market.mjs
       - name: Save verified history
         id: save
-        run: |
-          git add public/data/market-snapshot.json
-          if git diff --cached --quiet; then
-            echo 'changed=false' >> "$GITHUB_OUTPUT"
-          else
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'Update verified market snapshot'
-            git push
-            echo 'changed=true' >> "$GITHUB_OUTPUT"
-          fi
+        run: node scripts/save-collected-data.mjs public/data/market-snapshot.json
       - name: Publish verified public data to Site
         run: node scripts/publish-site-data.mjs market-snapshot.json
   publish:

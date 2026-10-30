@@ -1,9 +1,11 @@
 export type MarginVenue = {balance:number;buy:number;repay:number;short:number;total:number;reportedRepay?:number;repayInferred?:boolean};
-export type MarginRow = {date:string;sh:MarginVenue;sz:MarginVenue;stockTurnover?:number;official?:boolean};
+export type MarginRow = {date:string;sh:MarginVenue;sz:MarginVenue;stockTurnover?:number;official?:boolean;szVerification?:"szse"|"emoney"};
 export type MarginSnapshot = {
   schemaVersion:1;asOf:string;generatedAt:string;scope:"SH_SZ_SECURITIES";
   sourceDates:{sh:string;sz:string};history:MarginRow[];
-  checks:{officialSh:number;officialSzDates:string[];requests:number;seconds:number;mode:string};
+  checks:{officialSh:number;officialSzDates:string[];requests:number;seconds:number;mode:string;
+    backupSz?:{provider:"emoney";url:string;dates:string[];anchorDate:string;toleranceYuan:number}};
+  collection?:{state:"pending";checkedAt:string;attempts:number;reason:"source_unavailable"};
 };
 export type MarginPoint = MarginRow & {balance:number;buy:number;repay:number;short:number;total:number;
   net:number;net5?:number;net20?:number;growth20?:number;intensity?:number;intensity20?:number;streak:number};
@@ -12,6 +14,7 @@ export const marginSources = {
   sh:"https://www.sse.com.cn/market/othersdata/margin/detail/",
   sz:"https://www.szse.cn/disclosure/margin/margin/index.html",
   em:"https://data.eastmoney.com/rzrq/total.html",
+  backup:"https://ds.emoney.cn/DataCenter2/DataCenter/dzjy_rzrq",
   tencent:"https://gu.qq.com/sh000001/zs",
 };
 export const marginResearch = [
@@ -45,8 +48,16 @@ export function validateMargin(snapshot:unknown,today=new Date(Date.now()+8*3600
     if(row.stockTurnover!==undefined)marginAssert(Number.isFinite(row.stockTurnover)&&row.stockTurnover>1e10&&row.stockTurnover<1e14,"同日成交额单位异常");
   }
   marginAssert(s.history.at(-1)!.date===s.asOf,"融资末行与统计日期不一致");
-  marginAssert(s.checks?.officialSh>=1&&Array.isArray(s.checks.officialSzDates)&&s.checks.officialSzDates.includes(s.asOf),"缺少同日交易所核验");
+  marginAssert(s.checks?.officialSh>=1&&Array.isArray(s.checks.officialSzDates),"缺少交易所核验记录");
+  const backup=s.checks.backupSz;
+  if(backup){
+    marginAssert(backup.provider==="emoney"&&backup.url===marginSources.backup&&backup.toleranceYuan===1e6&&Array.isArray(backup.dates)&&backup.dates.length>0&&new Set(backup.dates).size===backup.dates.length,"备用核验来源或精度无效");
+    marginAssert(validMarginDate(backup.anchorDate)&&s.checks.officialSzDates.includes(backup.anchorDate)&&backup.dates.every(d=>validMarginDate(d)&&d>backup.anchorDate&&d<=s.asOf&&s.history.some(r=>r.date===d&&r.szVerification==="emoney")),"备用核验缺少官方历史锚点或对应日期");
+  }
+  marginAssert(s.checks.officialSzDates.includes(s.asOf)||!!backup?.dates.includes(s.asOf),"缺少同日交易所或独立来源交叉核验");
+  marginAssert(s.history.every(r=>r.szVerification!=="emoney"||backup?.dates.includes(r.date)),"备用核验行缺少来源记录");
   marginAssert(s.checks.officialSzDates.every(validMarginDate)&&Number.isInteger(s.checks.requests)&&s.checks.requests>0&&Number.isFinite(s.checks.seconds)&&s.checks.seconds>=0&&typeof s.checks.mode==="string","融资核验记录无效");
+  if(s.collection)marginAssert(s.collection.state==="pending"&&s.collection.reason==="source_unavailable"&&Number.isInteger(s.collection.attempts)&&s.collection.attempts>=1&&Number.isFinite(Date.parse(s.collection.checkedAt))&&Date.parse(s.collection.checkedAt)>=Date.parse(s.generatedAt)&&Date.parse(s.collection.checkedAt)<=Date.now()+300000,"融资补采状态无效");
 }
 export function marginSeries(rows:MarginRow[]):MarginPoint[]{
   let streak=0;
