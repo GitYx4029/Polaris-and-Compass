@@ -13,6 +13,10 @@ assert.throws(()=>parseRanking({...raw,time:'2026-10-10'},'2026-10-09'),/date/);
 assert.throws(()=>parseRanking({...raw,time:'2026-02-30'},'2026-10-09'),/date/);
 assert.throws(()=>parseRanking({...raw,jlrnames:raw.jlrnames.slice(0,19)},'2026-10-09'),/incomplete/);
 assert.throws(()=>parseRanking({...raw,jlrnames:[raw.jlrnames[0],...raw.jlrnames.slice(0,19)]},'2026-10-09'),/duplicate/);
+const aliases={...raw,jlrnames:[raw.jlrnames[0],...raw.jlrnames],jlrvalues:[raw.jlrvalues[0],...raw.jlrvalues]};
+assert.deepEqual(parseRanking(aliases,'2026-10-09'),ranking);
+assert.throws(()=>parseRanking({...aliases,jlrvalues:['21',...raw.jlrvalues]},'2026-10-09'),/conflicting duplicate/);
+assert.deepEqual(parseRanking({...raw,jlrnames:raw.jlrnames.map(n=>' '+n.replace('(','（').replace(')','）')+' ')},'2026-10-09'),ranking);
 const data=Array.from({length:500},(_,i)=>({FUND_CODE:`5${String(10000+i).padStart(5,'0')}`,
   FUND_SNAME:`ETF${i}`,FUND_NAME:`ETF full name ${i}`,NETIN_VALUE:`${i<20?20-i:0}亿元`,
   VALUE:'10.00亿元',TRADEDATE:'2026-10-09'}));

@@ -1,7 +1,9 @@
 // Provider rankings are subscription/redemption estimates. Their date is
 // independent of the live quote date in the provider's table.
 export const flowSourceUrl='https://fund.stockstar.com/etf/detail';
-export const chartUrl='https://fund.stockstar.com/etf/data/GetBBChartDatas?count=20';
+// Index aliases can repeat the same ETF. Request a small surplus so the final
+// ranking can still contain 20 distinct funds, then verify the full universe.
+export const chartUrl='https://fund.stockstar.com/etf/data/GetBBChartDatas?count=60';
 export const tableUrl='https://fund.stockstar.com/etf/data/GetBBTableDatas?type=gm&pagesize=2000&pageindex=';
 const datePattern=/^\d{4}-\d{2}-\d{2}$/;
 const codePattern=/^(?:1[56]\d{4}|5\d{5})$/;
@@ -16,18 +18,22 @@ export function moneyYi(value){
 }
 export function parseRanking(raw,today){
   check(raw?.ret===0&&validDate(raw.time)&&raw.time<=today,'invalid ranking date/status');
-  check(Array.isArray(raw.jlrnames)&&raw.jlrnames.length===20&&
-    Array.isArray(raw.jlrvalues)&&raw.jlrvalues.length===20,'incomplete top 20');
-  const seen=new Set();let previous=Infinity;
-  const rows=raw.jlrnames.map((name,i)=>{
-    const match=String(name).match(/^(.+)\((\d{6})\)$/);
+  check(Array.isArray(raw.jlrnames)&&raw.jlrnames.length>=20&&raw.jlrnames.length<=100&&
+    Array.isArray(raw.jlrvalues)&&raw.jlrvalues.length===raw.jlrnames.length,'incomplete top 20');
+  const seen=new Map(),rows=[];let previous=Infinity;
+  for(const [i,name] of raw.jlrnames.entries()){
+    const match=String(name).trim().match(/^(.+)[(（](\d{6})[)）]$/);
     const text=String(raw.jlrvalues[i]);
     const amount=/^\d+(?:\.\d+)?$/.test(text)?Number(text):NaN;
-    check(match&&codePattern.test(match[2])&&!seen.has(match[2]),'invalid/duplicate ETF code');
+    check(match&&codePattern.test(match[2]),`invalid ETF code at row ${i+1}: ${String(name).slice(0,120)}`);
     check(Number.isFinite(amount)&&amount>0&&amount<=previous,'invalid net inflow/order');
-    seen.add(match[2]);previous=amount;
-    return {rank:i+1,code:match[2],rankingName:match[1],netInflowYi:amount};
-  });
+    previous=amount;
+    if(seen.has(match[2])){check(seen.get(match[2])===amount,'conflicting duplicate ETF ranking');continue;}
+    seen.set(match[2],amount);
+    rows.push({rank:rows.length+1,code:match[2],rankingName:match[1],netInflowYi:amount});
+    if(rows.length===20)break;
+  }
+  check(rows.length===20,'incomplete top 20 distinct ETFs after duplicate aliases');
   return {date:raw.time,rows};
 }
 export function reconcileUniverse(ranking,pages){
