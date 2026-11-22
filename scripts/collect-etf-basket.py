@@ -24,6 +24,7 @@ SSE='http://query.sse.com.cn/commonQuery.do'
 SZSE='http://www.szse.cn/api/report/ShowReport'
 SINA='https://stock.finance.sina.com.cn/fundInfo/api/openapi.php/CaihuiFundInfoService.getNav'
 EM='https://fund.eastmoney.com/pingzhongdata/'
+NAV_CORRECTIONS={('563800','2024-11-11'):{'value':1.0002,'sourceUrl':'https://www.gffunds.com.cn/jjgg/zdsj/202411/P020241113314234345809.pdf'}}
 CORE=set('510300 510310 510330 159919 510050 510100 510500 512500 159922 512100 159845 560010 159629 159915 159952 159977 588080 588050 159901 510180 510230 515800 560050'.split())
 FUND_ROWS=[
  ('510300','沪深300ETF华泰柏瑞','沪深300'),('510310','沪深300ETF易方达','沪深300'),('510330','沪深300ETF华夏','沪深300'),('159919','沪深300ETF嘉实','沪深300'),('515330','沪深300ETF天弘','沪深300'),
@@ -135,18 +136,28 @@ def main():
  if output.exists():
   try:prior=json.loads(output.read_text());check(prior is None or prior.get('schemaVersion')==1,'old snapshot schema')
   except json.JSONDecodeError:raise ValueError('Existing basket JSON is damaged')
- navs={};inceptions={};calendar=set();crosschecks=0
+ navs={};inceptions={};calendar=set();crosschecks=0;nav_corrections=[];nav_conflicts=[]
  def nav_job(f):
   code=f[0];em=parse_em(client.get(EM+code+'.js','https://fund.eastmoney.com/').decode('utf-8-sig'))
   url=SINA+'?'+urllib.parse.urlencode({'symbol':code,'datefrom':start,'dateto':today.isoformat(),'page':1,'num':2000})
   other=parse_sina(client.json(url,'https://stock.finance.sina.com.cn/'));common=sorted(d for d in other if d in em)
   check(len(common)>=min(10,len(other)),'NAV sources have insufficient common dates '+code)
-  # All overlapping dates are cheap to check, not only a few handpicked ones.
-  for d in common:check(abs(em[d]-other[d])<=.00011,'independent unit NAV mismatch '+code+' '+d)
-  return code,{d:v for d,v in em.items() if start<=d<=today.isoformat()},min(em),set(other)|set(em),len(common)
+  corrections=[];conflicts=[]
+  # A disagreement is never averaged or silently accepted. A documented fund
+  # announcement can arbitrate; otherwise the disputed historical NAV is null.
+  for d in common:
+   if abs(em[d]-other[d])>.00011:
+    known=NAV_CORRECTIONS.get((code,d))
+    if known and abs(other[d]-known['value'])<1e-8:
+     em[d]=known['value'];corrections.append({'code':code,'date':d,**known})
+    else:
+     conflicts.append({'code':code,'date':d,'eastmoney':em[d],'sina':other[d]});em[d]=None
+  print(json.dumps({'stage':'NAV-reconciled','code':code,'compared':len(common),'corrections':corrections,'conflicts':conflicts[:10]}),flush=True)
+  return code,{d:v for d,v in em.items() if start<=d<=today.isoformat()},min(em),set(other)|set(em),len(common),corrections,conflicts
  with futures.ThreadPoolExecutor(max_workers=6) as pool:
-  for code,values,inception,days,count in pool.map(nav_job,FUND_ROWS):
+  for code,values,inception,days,count,corrections,conflicts in pool.map(nav_job,FUND_ROWS):
    navs[code]=values;inceptions[code]=inception;crosschecks+=count
+   nav_corrections.extend(corrections);nav_conflicts.extend(conflicts)
    if code=='510300':calendar={d for d in days if start<=d<=today.isoformat()}
  dates=sorted(d for d in calendar if dt.date.fromisoformat(d).weekday()<5)
  check(len(dates)>=20,'trading calendar insufficient')
@@ -186,7 +197,7 @@ def main():
   if all(f['inception']>d or q[i] is not None and v[i] is not None and prev[i] is not None for i,f in enumerate(funds)) and d in official_sh and d in official_sz:cut=j;break
  check(cut is not None,'no complete independently dated basket session')
  rows=rows[:cut+1];asof=rows[-1][0];check(not prior or asof>=prior['asOf'],'basket date regressed')
- snapshot={'schemaVersion':1,'asOf':asof,'generatedAt':dt.datetime.now(dt.timezone.utc).isoformat().replace('+00:00','Z'),'poolVersion':'2026-11-22-core23-extended11','referenceUrl':REF,'funds':funds,'rows':rows,'sources':{'sh':SSE+'?sqlId=COMMON_SSE_ZQPZ_ETFZL_XXPL_ETFGM_SEARCH_L','sz':SZSE+'?SHOWTYPE=xlsx&CATALOGID=scsj_fund_jjgm','nav':EM},'checks':{'requests':client.requests,'seconds':round(time.monotonic()-began,2),'officialShDates':sorted(d for d in official_sh if d<=asof),'officialSzDates':sorted(d for d in official_sz if d<=asof),'historyMode':'official','sampleChecks':crosschecks}}
+ snapshot={'schemaVersion':1,'asOf':asof,'generatedAt':dt.datetime.now(dt.timezone.utc).isoformat().replace('+00:00','Z'),'poolVersion':'2026-11-22-core23-extended11','referenceUrl':REF,'funds':funds,'rows':rows,'sources':{'sh':SSE+'?sqlId=COMMON_SSE_ZQPZ_ETFZL_XXPL_ETFGM_SEARCH_L','sz':SZSE+'?SHOWTYPE=xlsx&CATALOGID=scsj_fund_jjgm','nav':EM},'checks':{'requests':client.requests,'seconds':round(time.monotonic()-began,2),'officialShDates':sorted(d for d in official_sh if d<=asof),'officialSzDates':sorted(d for d in official_sz if d<=asof),'historyMode':'official','sampleChecks':crosschecks,'navCorrections':nav_corrections,'navConflicts':nav_conflicts}}
  if asof<dates[-1]:snapshot['pending']={'checkedAt':snapshot['generatedAt'],'reason':'最新交易日的份额或同日净值尚未全部发布'}
  output.parent.mkdir(parents=True,exist_ok=True);temp=output.with_suffix('.tmp.json');temp.write_text(json.dumps(snapshot,ensure_ascii=False,separators=(',',':'))+'\n')
  # Shared UI/server validator is the final gate before atomic replacement.

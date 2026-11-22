@@ -3,7 +3,7 @@ export type BasketFund={code:string;name:string;category:string;group:"core"|"ex
 export type BasketRow=[string,(number|null)[],(number|null)[]];
 export type BasketSnapshot={schemaVersion:1;asOf:string;generatedAt:string;poolVersion:string;referenceUrl:string;funds:BasketFund[];rows:BasketRow[];
   sources:{sh:string;sz:string;nav:string;history?:string};
-  checks:{requests:number;seconds:number;officialShDates:string[];officialSzDates:string[];historyMode:"official"|"archive-crosschecked";sampleChecks:number};
+  checks:{requests:number;seconds:number;officialShDates:string[];officialSzDates:string[];historyMode:"official"|"archive-crosschecked";sampleChecks:number;navCorrections?:{code:string;date:string;value:number;sourceUrl:string}[];navConflicts?:{code:string;date:string;eastmoney:number;sina:number}[]};
   pending?:{checkedAt:string;reason:string}};
 export type BasketPoint={date:string;net:number|null;scale:number|null;expected:number;valid:number;groups:Record<string,number|null>;flows:(number|null)[];rates:(number|null)[]};
 export function basketAssert(value:unknown,message:string):asserts value{if(!value)throw Error(`ETF观察篮子：${message}`);}
