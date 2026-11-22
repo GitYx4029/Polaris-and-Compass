@@ -1,0 +1,43 @@
+name: Collect verified broad ETF basket
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/collect-etf-basket.yml'
+      - 'scripts/*etf-basket*'
+      - 'lib/etfBasket.ts'
+  schedule:
+    - cron: '23 12 * * 1-5' # Beijing 20:23, first night records
+    - cron: '43 15 * * 1-5' # Beijing 23:43, NAV catch-up
+    - cron: '17,47 0,1 * * 1-5' # Beijing 08:17/08:47/09:17/09:47, final shares
+permissions:
+  contents: write
+  id-token: write
+concurrency:
+  group: broad-etf-basket-collection
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35 # Five-year exchange bootstrap only; ordinary updates reuse history.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check date alignment, missingness, ranges and calculation
+        run: node --experimental-strip-types --test scripts/etf-basket.test.mjs
+      - name: Collect exchange shares and independently reconcile unit NAV
+        run: python scripts/collect-etf-basket.py
+      - name: Verify full basket and historical calculations
+        run: node --experimental-strip-types scripts/verify-etf-basket.mjs
+      - name: Save public basket without rebuilding the webpage
+        run: node scripts/save-collected-data.mjs public/data/etf-basket.json
+      - name: Publish and verify durable delivery
+        run: node scripts/publish-site-data.mjs etf-basket.json

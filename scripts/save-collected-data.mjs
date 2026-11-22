@@ -1,7 +1,7 @@
 // Separate collectors update separate files. Rebase/retry only their own commit
 // when another collector wins a push race. A content conflict still fails.
 import {execFileSync} from 'node:child_process';
-const allowed=new Set(['public/data/market-snapshot.json','public/data/etf-flows.json','public/data/etf-flows-history.json','public/data/margin.json']);
+const allowed=new Set(['public/data/market-snapshot.json','public/data/etf-flows.json','public/data/etf-flows-history.json','public/data/margin.json','public/data/etf-basket.json']);
 const files=process.argv.slice(2);
 if(!files.length||files.some(f=>!allowed.has(f)))throw Error('Only collected public data files may be committed');
 const git=(...args)=>execFileSync('git',args,{stdio:['ignore','pipe','pipe'],encoding:'utf8'});

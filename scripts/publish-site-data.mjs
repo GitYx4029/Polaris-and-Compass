@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises';
 const origin='https://a-share-pulse-lxy-0924.reagan-park-6434.chatgpt.site';
 const endpoint=`${origin}/api/publish-data`;
-const allowed=new Set(['market-snapshot.json','etf-flows.json','etf-flows-history.json','margin.json']);
+const allowed=new Set(['market-snapshot.json','etf-flows.json','etf-flows-history.json','margin.json','etf-basket.json']);
 const names=process.argv.slice(2);
 if(!names.length||names.some(name=>!allowed.has(name)))throw Error('Specify allowed public data files');
 if(!process.env.ACTIONS_ID_TOKEN_REQUEST_URL||!process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN)throw Error('This publisher must run in an authorized GitHub workflow');
