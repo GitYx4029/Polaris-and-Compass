@@ -7,7 +7,8 @@ import { investorQuotes, quoteIndexAt } from "@/lib/investorQuotes";
 import { isCloseConfirmed, nextScheduledRefresh } from "@/lib/refreshSchedule";
 import { saveQuotePng, type ShareDatum } from "@/lib/quoteImage";
 import { recoverBrowserDetail, type RecoveredDetail } from "@/lib/browserDetail";
-import EtfFlows from "./EtfFlows";
+import EtfSection from "./EtfSection";
+import {EtfBasketReference} from "./EtfBasket";
 import FloatingToc from "./FloatingToc";
 import MarginPanel, { MarginProvider, MarginReference, MarginDownload, MarginOverview, MarginTrendPanel } from "./MarginPanel";
 import { navigationGroups } from "@/lib/navigation";
@@ -597,14 +598,14 @@ export default function Home() {
       <TrendExplorer days={days} result={result} provisional={provisional}/>
       </section>
       <section id={navigationGroups[2].id} className="observation-group" aria-label={navigationGroups[2].title}><ObservationHeading index={2}/>
-        <EtfFlows refreshKey={result?.checkedAt} marketDate={latest?.date}/>
+        <EtfSection refreshKey={result?.checkedAt} marketDate={latest?.date}/>
       </section>
       <section id={navigationGroups[3].id} className="observation-group" aria-label={navigationGroups[3].title}><ObservationHeading index={3}/>
       <section id="history" className="panel history"><div className="panel-header"><div><p className="eyebrow">LATEST SESSIONS</p><h3>{navigationGroups[3].links[0].label}</h3></div><div className="history-actions"><button className="download" onClick={()=>result&&downloadHistory(result)} disabled={!result}><Download size={16}/>下载历史 CSV（{days.length} 日）</button><MarginDownload/></div></div><details id="history-records" className="compact-fold history-records"><summary><strong>最近 10 个交易日明细</strong><span>展开查看</span></summary><div className="fold-content"><p className="history-unit">沪、深、合计、20 日累计：万亿元；科创、ETF、510300、20 日平均：亿元；资金温度：表格用倍，手机卡片用百分比</p><div className="table-wrap"><HistoryTableHead result={result}/>{days.slice(-10).reverse().map(d=>{const extra=result?.snapshot?.history.find(item=>item.date===d.date),single=result?.etf300?.get(d.date)??extra?.etf510300;return <div className="table-row" key={d.date}><span>{d.date}{d.date===provisional?" · 盘中":""}</span><span>{wan(d.sh)}</span><span>{wan(d.sz)}</span><strong>{wan(d.total)}</strong><span>{extra?.star!==undefined?yi(extra.star):"—"}</span><span>{extra?.etf!==undefined?yi(extra.etf):"—"}</span><span>{single!=null?yi(single):"—"}</span><span>{d.date===provisional||d.roll20===undefined?"—":wan(d.roll20)}</span><span>{d.date===provisional||d.avg20===undefined?"—":yi(d.avg20)}</span><span>{d.date===provisional||d.heat===undefined?"—":d.heat.toFixed(2)}</span></div>})}{!days.length&&<div className="empty">{loading?"正在核对交易日数据…":"暂无完整的沪深数据"}</div>}</div><MobileHistory days={days} result={result} provisional={provisional}/></div></details><details className="compact-note"><summary>下载口径与单位</summary><p className="fine">导出 CSV 保留底层“亿元”数值，细分市场历史仅包含已核实日期；盘中行会标记“盘中暂计”，其滚动值和温度留空。融资记录独立按统计日导出，金额以“元”保存。</p></details></section>
       <section className="panel guide" id="reference"><div className="panel-header"><div><p className="eyebrow">REFERENCE LIST / 解读参考</p><h3>指标、阈值与观察含义</h3></div><span>按对应数据口径分区</span></div>
         <p className="reference-credit">本页观察工具箱来自“袁莹投资思维”；以下阈值用于标注原有观察规则，实际数据由行情与交易所来源核对。</p>
         <p className="reference-section-label">原有经验观察规则 · 指南针 / 北极星 / 资金温度计</p>
-        <p className="guide-swipe-hint">左右滑动查看三项解读参考 →</p><div className="guide-groups" aria-label="指南针、北极星和资金温度计解读参考">
+        <p className="guide-swipe-hint">左右滑动查看各项解读参考</p><div className="guide-groups" aria-label="五项指标解读参考">
           <details className="guide-block compact-fold" id="guide-daily"><summary><span className="guide-index">01 · 当日沪深成交额</span><h4>指南针</h4><span className="guide-current">{complete?`${wan(complete.total)} 万亿 · ${tiers[currentTier!].name}`:"等待数据"}</span><span className="fold-hint">展开阶梯</span></summary><div className="fold-content"><p className="guide-description">大 A 每日成交额 · 单位：万亿元</p>
             <div className="range-list">{tiers.map((t,i)=><div className={`reference-entry ${i===currentTier?"active":""}`} key={t.text}><strong>{t.text}</strong><div><b>{t.name}</b><small>{t.note}</small></div>{i===currentTier&&<em>{provisional?"前收":"当前"}</em>}</div>)}</div>
           </div></details>
@@ -616,9 +617,10 @@ export default function Home() {
             <div className="reference-list"><div className={heatReference===0?"active":undefined}><strong>＜85%</strong><span>地量，交易较少；按原规则可准备买入</span>{heatReference===0&&<em>当前</em>}</div><div className={heatReference===1?"active":undefined}><strong>85%—105%</strong><span>正常，按原规则暂不操作</span>{heatReference===1&&<em>当前</em>}</div><div className={heatReference===2?"active":undefined}><strong>＞110%—＜140%</strong><span>过热，按原规则准备卖出</span>{heatReference===2&&<em>当前</em>}</div><div className={heatReference===3?"active":undefined}><strong>≥140%</strong><span>太热，按原规则需要退出</span>{heatReference===3&&<em>当前</em>}</div></div>
             <p className="fine">1.00 倍为近 20 个交易日平均水平；仅衡量成交活跃度，不表示资金净流入。105%—110% 未设定明确动作；85% 归入正常区间，140% 归入最高区间。</p>
           </div></details>
+          <MarginReference/>
+          <EtfBasketReference/>
         </div>
-        <p className="fine guide-disclaimer">以上三项为原有经验观察规则，阈值及对应操作未经过策略验证，不构成投资建议。</p>
-        <MarginReference/>
+        <p className="fine guide-disclaimer">前三项为原有经验观察规则；融资及ETF申赎用于描述历史位置与资金变化，均不直接生成买卖指令。</p>
 
         <details className="compact-note indicator-reference"><summary>指标层级与作用</summary><p>沪深合计：全市场成交活跃度；上证、深证：观察两地市场分布；科创板：观察沪市科技板块；沪深 ETF：观察交易所基金；510300：观察单只宽基 ETF。20 日累计：观察中期总量；20 日平均：作为当日比较基准；资金温度：当日成交额相对基准的倍数。</p></details>
       <details id="data-method" className="compact-note"><summary>数据来源、更新与核验说明</summary><footer><p><strong>数据口径</strong> 页面中的“量”统一指成交额，不是成交股数或 ETF 份数。腾讯行情上证指数与深证成指的沪、深市场成交额由万元换算为亿元；该行情口径与严格仅计 A 股的交易所分类统计有细微差异。20 日累计由连续 20 个共同交易日计算，20 日均量＝累计额 ÷ 20，资金温度＝当日沪深合计 ÷ 20 日均量。</p><p><strong>更新与核对</strong> 页面打开时，北京时间 12:00、15:15、15:55、16:55、17:55、18:55 定点刷新，在北京时间工作日 09:15—16:30 的可变时段每 2 分钟核对；重新打开页面也会立即读取。科创板、ETF 的数据由仓库工作流于交易日午间与收盘后的多个错峰时点抓取，若工作流漏采，收盘后浏览器会按完整代码范围直连补采，并检查日期、金额与覆盖数量；补采结果仅在当前浏览器保存，仓库快照仍须由工作流提交。无同日合格数据时显示“待核实”。{result&&` ${result.source}；行情时间 ${quoteTime??"未知"}（北京时间）；本页核对 ${new Date(result.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}{result?.snapshot&&` ${result.snapshot.clientRecoveredAt?"浏览器细分项补采":"细分项仓库快照"} ${new Date(result.snapshot.generatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}。`}</p><p><strong>来源</strong> <a href="https://gu.qq.com/sh000001/zs" target="_blank" rel="noreferrer">腾讯财经·上证指数</a> · <a href="https://gu.qq.com/sz399001/zs" target="_blank" rel="noreferrer">腾讯财经·深证成指</a> · <a href="https://gu.qq.com/sh510300" target="_blank" rel="noreferrer">腾讯财经·510300</a> · <a href="https://www.sse.com.cn/market/stockdata/overview/day/" target="_blank" rel="noreferrer">上交所·股票成交概况</a> · <a href="https://qt.gtimg.cn/q=sh510300" target="_blank" rel="noreferrer">腾讯财经·ETF 报价</a>。观察区间仅供自定义监测，不构成投资建议。</p></footer></details>

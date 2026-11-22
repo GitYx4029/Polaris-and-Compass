@@ -11,10 +11,12 @@ export const navigationGroups = [
   ] },
   { number: "03", id: "etf", title: "ETF 资金流", links: [
     { id: "etf-inflows", label: "资金净流入前 20 ETF" },
+    { id: "etf-basket", label: "汇金相关宽基 ETF" },
   ] },
   { number: "04", id: "resources", title: "历史与解读", links: [
     { id: "history", label: "近期交易日与下载" },
     { id: "reference", label: "指标解读参考" },
-    { id: "margin-reference", label: "融资阶梯参考" },
+    { id: "margin-reference", label: "04 · 融资阶梯参考" },
+    { id: "guide-etf-basket", label: "05 · 宽基 ETF 申赎参考" },
   ] },
 ] as const;

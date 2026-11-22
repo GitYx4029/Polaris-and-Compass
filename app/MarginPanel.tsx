@@ -141,7 +141,7 @@ export function MarginReference(){
   const {points,index,snapshot,ladderKey:key,setLadderKey:setKey}=useMargin();
   const ladder=useMemo(()=>marginLadder(points,index,key),[points,index,key]);
   const display=(v:number)=>key==="balance"?`${wan(v)} 万亿`:`${numeric(v,2)}%`;
-  return <details className="margin-reference compact-fold" id="margin-reference"><summary><strong>融资与杠杆 · 阶梯参考</strong><span>{ladder?`${display(ladder.value)} · ${ladderLabels[key][ladder.band]}`:"历史刻度与研究依据"}</span></summary><div className="fold-content"><div className="margin-ref-heading"><div><p className="eyebrow">DATA LADDER / 数据阶梯</p><h4>融资与杠杆 · 阶梯参考</h4></div><span>{points[index]?.date??"等待数据"} · 与上方所选日期同步</span></div>
+  return <details className="guide-block margin-reference compact-fold" id="margin-reference"><summary><span className="guide-index">04 · 融资与杠杆</span><h4>阶梯参考</h4><span className="guide-current">{ladder?`${display(ladder.value)} · ${ladderLabels[key][ladder.band]}`:"历史刻度与研究依据"}</span><span className="fold-hint">展开阶梯</span></summary><div className="fold-content"><p className="guide-description">沪深融资规模、参与强度与增速 · {points[index]?.date??"等待数据"}，与上方所选日期同步</p>
     <p className="fine">根据选定日前最多三年的历史数据划分五档，直接显示实际金额或百分比区间。分档用于观察相对历史位置，尚未验证买卖胜率；规模高不直接等于市场热。</p>
     <div className="chart-tabs margin-reference-tabs" role="group" aria-label="融资阶梯指标">{([["balance","融资规模"],["intensity20","融资参与 · 20 日平滑"],["growth20","20 日增速"]] as const).map(([metric,label])=><button key={metric} aria-pressed={key===metric} className={key===metric?"active":""} onClick={()=>setKey(metric)}>{label}</button>)}</div>
     {ladder?<><div className="margin-ladder-current">当前 <strong>{display(ladder.value)}</strong><span>{ladderLabels[key][ladder.band]}</span></div>

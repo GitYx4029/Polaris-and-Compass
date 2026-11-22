@@ -22,7 +22,7 @@ export default function FloatingToc() {
       for(let node:HTMLElement|null=target;node;node=node.parentElement)if(node instanceof HTMLDetailsElement)node.open=true;
       document.dispatchEvent(new CustomEvent("polaris:reveal",{detail:id}));
       cancelAnimationFrame(revealFrame);
-      revealFrame=requestAnimationFrame(()=>target.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"}));
+      revealFrame=requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"}));
     };
     const onHash=()=>reveal(window.location.hash);
     const onLink=(event:MouseEvent)=>{
@@ -52,6 +52,7 @@ export default function FloatingToc() {
       <p>快速跳转</p>
       <ol className="toc-groups">{navigationGroups.map(group => <li key={group.number}>
         <a href={`#${group.id}`} aria-current={active===group.id?"location":undefined}><span>{group.number}</span><strong>{group.title}</strong>{active===group.id&&<small>当前</small>}</a>
+        {(group.id==="etf"||group.id==="resources")&&<ul className="toc-subitems">{group.links.filter(link=>group.id==="etf"||link.id==="margin-reference"||link.id==="guide-etf-basket").map(link=><li key={link.id}><a href={`#${link.id}`}>{link.label}</a></li>)}</ul>}
       </li>)}</ol>
     </nav>
   </details>;

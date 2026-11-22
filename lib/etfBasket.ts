@@ -6,6 +6,14 @@ export type BasketSnapshot={schemaVersion:1;asOf:string;generatedAt:string;poolV
   checks:{requests:number;seconds:number;officialShDates:string[];officialSzDates:string[];historyMode:"official"|"archive-crosschecked";sampleChecks:number;navCorrections?:{code:string;date:string;value:number;sourceUrl:string}[];navConflicts?:{code:string;date:string;eastmoney:number;sina:number}[]};
   pending?:{checkedAt:string;reason:string}};
 export type BasketPoint={date:string;net:number|null;scale:number|null;expected:number;valid:number;groups:Record<string,number|null>;flows:(number|null)[];rates:(number|null)[]};
+export const basketAdjustments=[
+  {code:"512100",date:"2022-09-02",factor:.36555,sourceUrl:"https://www.sse.com.cn/disclosure/fund/announcement/c/new/2022-09-05/512100_20220905_1_UJdHwEYe.pdf"},
+  {code:"560010",date:"2022-09-13",factor:.35295,sourceUrl:"https://www.gffunds.com.cn/jjgg/zdsj/202209/t20220914_377871.shtml"},
+  {code:"510310",date:"2024-09-20",factor:.49977589,sourceUrl:"https://www.sse.com.cn/disclosure/fund/announcement/c/new/2024-09-23/510310_20240923_G18B.pdf"},
+  {code:"159922",date:"2024-11-29",factor:2.5,sourceUrl:"https://static.cninfo.com.cn/finalpage/2024-12-02/1221893545.PDF"},
+  {code:"510100",date:"2025-03-07",factor:.49719902,sourceUrl:"https://www.sse.com.cn/disclosure/fund/announcement/c/new/2025-03-10/510100_20250310_F7LV.pdf"},
+] as const;
+export const basketAdjustment=(code:string,date:string)=>basketAdjustments.find(a=>a.code===code&&a.date===date);
 export function basketAssert(value:unknown,message:string):asserts value{if(!value)throw Error(`ETF观察篮子：${message}`);}
 export const basketDate=(v:unknown):v is string=>typeof v==="string"&&/^\d{4}-\d\d-\d\d$/.test(v)&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v;
 export function validateBasket(value:unknown,today=new Date(Date.now()+8*3600000).toISOString().slice(0,10)):asserts value is BasketSnapshot{
@@ -38,9 +46,10 @@ export function basketSeries(s:BasketSnapshot,group:"all"|"core"|"extended"="all
       expected++;
       let flow:number|null=null;
       if(j&&prev!==null&&prev!==undefined&&q[i]!==null&&v[i]!==null){
+        const adjustment=basketAdjustment(f.code,date),adjustedPrevious=prev*(adjustment?.factor??1);
         const ratio=prev>0?q[i]!/prev:1,navRatio=oldNav?v[i]!/oldNav:1;
         const possibleSplit=Math.abs(ratio-1)>.3&&(ratio-1)*(navRatio-1)<0&&Math.abs(ratio*navRatio-1)<.03;
-        if(!possibleSplit){flow=(q[i]!-prev)*v[i]!;rates[i]=prev>0?(q[i]!/prev-1)*100:null;}
+        if(!possibleSplit||adjustment){flow=(q[i]!-adjustedPrevious)*v[i]!;rates[i]=adjustedPrevious>0?(q[i]!/adjustedPrevious-1)*100:null;}
       }
       flows[i]=flow;if(flow!==null){net+=flow;valid++;}
       if(!(f.category in groups))groups[f.category]=0;

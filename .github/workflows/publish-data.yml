@@ -10,7 +10,7 @@ permissions:
   contents: read
   id-token: write
 concurrency:
-  group: market-collection
+  group: public-data-publication
   cancel-in-progress: false
 jobs:
   publish:
@@ -27,5 +27,8 @@ jobs:
           node scripts/verify-market.mjs
           node scripts/verify-etf-flows.mjs
           node --experimental-strip-types scripts/verify-margin.mjs
+          node --experimental-strip-types scripts/verify-etf-basket.mjs
       - name: Publish and read back without exposing repository credentials
-        run: node scripts/publish-site-data.mjs market-snapshot.json etf-flows.json etf-flows-history.json margin.json
+        run: |
+          node scripts/publish-site-data.mjs market-snapshot.json etf-flows.json etf-flows-history.json margin.json
+          node scripts/publish-site-data.mjs etf-basket.json
