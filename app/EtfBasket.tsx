@@ -15,7 +15,7 @@ function download(s:BasketSnapshot,points:BasketPoint[],code?:string,group:"all"
   const a=document.createElement("a");a.href=url;a.download=`汇金关联ETF${code?"_"+code:""}_${points[0]?.date}_${points.at(-1)?.date}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-export default function EtfBasket(){
+export default function EtfBasket({active=true}:{active?:boolean}){
   const [data,setData]=useState<BasketSnapshot|null>(null),[error,setError]=useState(""),[loading,setLoading]=useState(true);
   const [window,setWindow]=useState("1y"),[start,setStart]=useState(""),[end,setEnd]=useState(""),[group,setGroup]=useState<"all"|"core"|"extended">("core");
   const [mode,setMode]=useState<"daily"|"cumulative"|"scale">("daily"),[pick,setPick]=useState<string|null>(null),[hover,setHover]=useState<number|null>(null),[expanded,setExpanded]=useState(false);
@@ -23,7 +23,7 @@ export default function EtfBasket(){
     let value:unknown;for(const url of dataUrls("etf-basket.json")){try{const r=await fetch(`${url}?v=${Math.floor(Date.now()/300000)}`,{cache:"no-store",signal:AbortSignal.timeout(15000)});if(r.ok){value=await r.json();break;}}catch{/* Try configured delivery. */}}
     validateBasket(value);setData(value);setError("");
   }catch(e){setError(e instanceof Error?e.message:"观察篮子暂不可用");}finally{setLoading(false);}},[]);
-  useEffect(()=>{void refresh();},[refresh]);
+  useEffect(()=>{if(!active)return;void refresh();const timer=setInterval(()=>{if(document.visibilityState==="visible")void refresh();},300000);return()=>clearInterval(timer);},[refresh,active]);
   const all=useMemo(()=>data?basketSeries(data,group).slice(1):[],[data,group]);
   const shown=useMemo(()=>basketRange(all,window,window==="custom"?start:undefined,window==="custom"?end:undefined),[all,window,start,end]);
   const cumulative=useMemo(()=>basketCumulative(shown),[shown]);
@@ -40,11 +40,11 @@ export default function EtfBasket(){
   const focusedPrevious=focus?data.rows[data.rows.findIndex(r=>r[0]===focus.date)-1]:undefined;
   const groups=Object.entries(focus?.groups??{}).sort((a,b)=>Math.abs(b[1]??0)-Math.abs(a[1]??0));
   return <section id="etf-basket" className="panel basket-panel">
-    <div className="panel-header"><div><p className="eyebrow">BROAD ETF OBSERVATORY</p><h3>汇金相关宽基 ETF 观察</h3><p className="flow-subtitle">公开持仓关联标的与扩展观察池 · 全市场净申赎估算</p></div><div className="flow-actions"><button className="data-export" onClick={()=>download(data,shown,undefined,group)} disabled={!shown.length}><Download size={14}/>下载当前区间</button><button className="data-export" onClick={()=>download(data,all,undefined,group)}><Download size={14}/>全部历史</button><button className="data-export icon-only" aria-label="刷新观察篮子数据" onClick={()=>void refresh()} disabled={loading}><RefreshCw size={15}/></button></div></div>
+    <div className="panel-header"><div><p className="eyebrow">BROAD ETF OBSERVATORY</p><h3>汇金相关宽基 ETF 观察</h3><p className="flow-subtitle">公开持仓关联标的与扩展观察池 · 全市场净申赎估算</p></div><div className="flow-actions"><a className="data-export" href="#guide-etf-basket">解读参考</a><button className="data-export" onClick={()=>download(data,shown,undefined,group)} disabled={!shown.length}><Download size={14}/>下载当前区间</button><button className="data-export" onClick={()=>download(data,all,undefined,group)}><Download size={14}/>全部历史</button><button className="data-export icon-only" aria-label="刷新观察篮子数据" onClick={()=>void refresh()} disabled={loading}><RefreshCw size={15}/></button></div></div>
     <div className="flow-date"><strong>完整统计日 · {data.asOf}</strong><span>观察 {data.funds.length} 只 · 所选组最新日齐备 {latest?.valid}/{latest?.expected}</span></div>
     <p className="basket-boundary">这里观察相关 ETF 的整体申赎，不能据此识别汇金或其他国家队机构当天的买卖。</p>
     {data.pending&&<p className="fine" role="status">部分来源待补采；保留上次完整数据。最近尝试 {new Date(data.pending.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}（北京时间）。</p>}
-    <div className="basket-summary">{[["当日净申赎",latest?.net??null],["近5交易日累计",basketSum(all,5)],["近20交易日累计",basketSum(all,20)]].map(([label,v])=><article key={label as string}><span>{label}</span><strong>{amount(v as number|null)}<small>亿元</small></strong></article>)}</div>
+    <div className="basket-summary">{[["当日净申赎",latest?.net??null],["近5交易日累计",basketSum(all,5)],["近20交易日累计",basketSum(all,20)]].map(([label,v],i)=><article key={label as string}><span>{label}<button className="basket-card-download" aria-label={`下载${label}对应交易日原始数据`} title={`下载${label}数据`} onClick={()=>download(data,all.slice(-[1,5,20][i]),undefined,group)}><Download size={14}/></button></span><strong>{amount(v as number|null)}<small>亿元</small></strong></article>)}</div>
     <div className="basket-toolbar"><div className="basket-window-tabs" role="group" aria-label="观察周期">{basketWindows.map(v=><button key={v.key} aria-pressed={window===v.key} onClick={()=>{setWindow(v.key);setPick(null);setHover(null);}}>{v.label}</button>)}<button aria-pressed={window==="custom"} onClick={()=>{setWindow("custom");setStart(shown[0]?.date??all[0].date);setEnd(shown.at(-1)?.date??data.asOf);}}>自选</button></div><label className="basket-select">观察组<select aria-label="选择ETF观察组" value={group} onChange={e=>{setGroup(e.target.value as typeof group);setHover(null);}}><option value="all">全部34只</option><option value="core">基础观察组23只</option><option value="extended">扩展观察组11只</option></select></label></div>
     {window==="custom"&&<div className="basket-custom"><label>开始日期<input type="date" aria-label="观察开始日期" min={all[0].date} max={end||data.asOf} value={start} onChange={e=>{setStart(e.target.value);setPick(null);setHover(null);}}/></label><label>结束日期<input type="date" aria-label="观察结束日期" min={start||all[0].date} max={data.asOf} value={end} onChange={e=>{setEnd(e.target.value);setPick(null);setHover(null);}}/></label></div>}
     <div className="basket-range-meta"><strong>{shown[0]?.date??"—"} — {shown.at(-1)?.date??"—"}</strong><span>{shown.length} 个交易日 · 区间累计 {amount(rangeNet)} 亿元 · 日均 {amount(rangeNet===null?null:rangeNet/shown.length)} 亿元</span></div>

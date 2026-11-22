@@ -23,6 +23,7 @@ export function validateBasket(value:unknown,today=new Date(Date.now()+8*3600000
   basketAssert(Array.isArray(x.funds)&&x.funds.length>=5&&x.funds.length<=60&&new Set(x.funds.map(f=>f.code)).size===x.funds.length,"观察池缺失或重复");
   basketAssert(typeof x.poolVersion==="string"&&!!x.poolVersion&&x.referenceUrl==="https://wwww1998.github.io/national-team-etf-flow/","观察池版本或出处缺失");
   for(const f of x.funds){basketAssert(/^(?:5\d{5}|15\d{4})$/.test(f.code)&&!!f.name&&!!f.category&&["core","extended"].includes(f.group)&&basketDate(f.inception),"基金代码、名称或起始日无效");
+    if(f.firstShareDate)basketAssert(basketDate(f.firstShareDate)&&f.firstShareDate<=x.asOf&&f.firstShareDate>=f.inception,"首个份额记录日期无效");
     if(f.evidence)for(const e of f.evidence)basketAssert(!!e.holder&&basketDate(e.asOf)&&basketDate(e.publishedAt)&&e.asOf<=e.publishedAt&&/^https?:\/\//.test(e.url),"持仓证据无效");}
   basketAssert(Array.isArray(x.rows)&&x.rows.length>=2&&x.rows.length<=1800,"历史长度异常");
   const n=x.funds.length;
