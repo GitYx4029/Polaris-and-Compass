@@ -4,6 +4,7 @@ Bootstrap reads five years once. Subsequent runs only refresh recent shares;
 old numerical records are kept and all NAV histories are date-reconciled.
 """
 import concurrent.futures as futures
+import base64
 import datetime as dt
 import io
 import json
@@ -12,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import threading
+import subprocess
 import time
 import urllib.parse
 import urllib.request
@@ -24,6 +26,8 @@ SSE='http://query.sse.com.cn/commonQuery.do'
 SZSE='http://www.szse.cn/api/report/ShowReport'
 SINA='https://stock.finance.sina.com.cn/fundInfo/api/openapi.php/CaihuiFundInfoService.getNav'
 EM='https://fund.eastmoney.com/pingzhongdata/'
+ARCHIVE_SHA='509ebe97e6c92a5b75eea25b5f9bc422e80a21c0'
+ARCHIVE_URL='https://api.github.com/repos/wwww1998/national-team-etf-flow/git/blobs/'+ARCHIVE_SHA
 NAV_CORRECTIONS={('563800','2024-11-11'):{'value':1.0002,'sourceUrl':'https://www.gffunds.com.cn/jjgg/zdsj/202411/P020241113314234345809.pdf'}}
 CORE=set('510300 510310 510330 159919 510050 510100 510500 512500 159922 512100 159845 560010 159629 159915 159952 159977 588080 588050 159901 510180 510230 515800 560050'.split())
 FUND_ROWS=[
@@ -58,10 +62,16 @@ class Client:
    try:
     with self.lock:self.requests+=1
     req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Referer':referer,'Accept':'*/*'})
-    with urllib.request.urlopen(req,timeout=12) as response:
+    with urllib.request.urlopen(req,timeout=8) as response:
      check(int(response.headers.get('Content-Length','0'))<80_000_000,'response too large')
      body=response.read(80_000_001);check(len(body)<=80_000_000,'response too large');return body
    except (OSError,TimeoutError) as e:error=e
+  if 'sse.com.cn' in urllib.parse.urlsplit(url).hostname or 'szse.cn' in urllib.parse.urlsplit(url).hostname:
+   for alternate in [url,url.replace('http:','https:',1)]:
+    try:
+     with self.lock:self.requests+=1
+     return subprocess.run(['curl','--ipv4','--fail','--silent','--show-error','--location','--max-time','8','--connect-timeout','4','--user-agent','Mozilla/5.0','--referer',referer,alternate],capture_output=True,check=True,timeout=10).stdout
+    except (subprocess.SubprocessError,OSError) as e:error=e
   raise Unavailable(f'{urllib.parse.urlsplit(url).hostname}: {error}')
  def json(self,url,referer='https://www.sse.com.cn/'):return json.loads(self.get(url,referer).decode('utf-8-sig'))
 
@@ -166,15 +176,41 @@ def main():
   check([f['code'] for f in prior['funds']]==[f[0] for f in FUND_ROWS],'pool version change requires explicit migration')
   for d in dates:
    if d in old:shares[d]={f[0]:old[d][1][i] for i,f in enumerate(FUND_ROWS) if old[d][1][i] is not None}
- sh_days=[d for d in dates if d not in official_sh or d>=dates[-5]]
+ historical_mode=(prior or {}).get('checks',{}).get('historyMode','official');sample_checks=(prior or {}).get('checks',{}).get('shareSampleChecks',0)
+ if not prior:
+  # Immutable, date-stamped raw share archive speeds first load. It is not
+  # treated as an official complete record: compare a stratified sample and
+  # re-fetch recent sessions. Missing archived funds remain explicitly null.
+  blob=client.json(ARCHIVE_URL,'https://github.com/');check(blob.get('sha')==ARCHIVE_SHA and blob.get('encoding')=='base64','archive identity mismatch')
+  historical=json.loads(base64.b64decode(blob['content'])).get('shares',{})
+  for d in dates:
+   for code,value in historical.get(d.replace('-',''),{}).items():
+    if code in CODES:shares[d][code]=number(value)
+  historical_mode='archive-crosschecked'
+ sample_days=sorted({dates[min(len(dates)-1,round(i*(len(dates)-1)/19))] for i in range(20)}) if not prior else []
+ missing_sh=[d for d in dates[:-5] if any(code.startswith('5') and inceptions[code]<=d and shares[d].get(code) is None for code in CODES)]
+ # Bounded background backfill advances missing old records without turning
+ # every daily run into a five-year scrape. Newest gaps get priority.
+ backfill=sorted(missing_sh,reverse=True)[:20] if not prior or now.hour>=20 else []
+ sh_days=sorted(set(sample_days+dates[-5:]+backfill),reverse=True)
  # Each request covers all Shanghai targets on one date. Bootstrap in bounded
  # parallelism; later runs normally need five requests, not five years again.
- with futures.ThreadPoolExecutor(max_workers=6) as pool:
-  for j,(d,values) in enumerate(pool.map(lambda d:sse_day(client,d),sh_days)):
+ def safe_sh(d):
+  try:return sse_day(client,d)
+  except Unavailable as error:print(json.dumps({'stage':'SH-pending','date':d,'error':str(error)}),flush=True);return d,None
+ successes=0
+ with futures.ThreadPoolExecutor(max_workers=4) as pool:
+  for j,(d,values) in enumerate(pool.map(safe_sh,sh_days)):
+   if values is None:continue
+   if d in sample_days:
+    for code,value in values.items():
+     existing=shares[d].get(code)
+     if existing is not None:check(abs(existing-value)<=1,'archive/exchange shares conflict '+code+' '+d);sample_checks+=1
    for code,value in values.items():shares[d][code]=value
-   official_sh.add(d)
+   official_sh.add(d);successes+=1
    if j%100==0:print(json.dumps({'stage':'exchange-shares','done':j+1,'total':len(sh_days)}),flush=True)
- sz_start=dates[0] if not prior else dates[-5];cursor=dt.date.fromisoformat(sz_start);chunks=[]
+ check(prior is not None or successes>=10,'insufficient exchange checks for archive bootstrap')
+ sz_start=dates[-5];cursor=dt.date.fromisoformat(sz_start);chunks=[]
  while cursor<=dt.date.fromisoformat(dates[-1]):
   finish=min(cursor+dt.timedelta(days=89),dt.date.fromisoformat(dates[-1]));chunks.append((cursor.isoformat(),finish.isoformat()));cursor=finish+dt.timedelta(days=1)
  # 90-day exports stay small; each is a single whole-market workbook.
@@ -184,7 +220,12 @@ def main():
     if d in shares:shares[d].update(funds);official_sz.add(d)
  funds=[]
  for code,name,category in FUND_ROWS:
-  fund={'code':code,'name':name,'category':category,'group':'core' if code in CORE else 'extended','inception':inceptions[code]}
+  observed=next((d for d in dates if shares[d].get(code) is not None),None)
+  check(observed is not None,'fund has no official share history '+code)
+  first_share=next((f.get('firstShareDate') for f in (prior or {}).get('funds',[]) if f['code']==code and f.get('firstShareDate')),observed)
+  # Archive omissions must not be mistaken for a late listing/inception.
+  if (dt.date.fromisoformat(observed)-dt.date.fromisoformat(inceptions[code])).days>45:first_share=dates[0] if inceptions[code]<dates[0] else inceptions[code]
+  fund={'code':code,'name':name,'category':category,'group':'core' if code in CORE else 'extended','inception':inceptions[code],'firstShareDate':first_share}
   if code in PROOFS:
    published,page,amount,url=PROOFS[code];fund['evidence']=[{'holder':'中央汇金投资／中央汇金资产管理（报告内具名账户合计）','asOf':'2025-12-31','publishedAt':published,'url':url,'shares':amount,'page':'2025年报 §9.2 · PDF第'+page+'页'}]
   funds.append(fund)
@@ -197,7 +238,7 @@ def main():
   if all(f['inception']>d or q[i] is not None and v[i] is not None and prev[i] is not None for i,f in enumerate(funds)) and d in official_sh and d in official_sz:cut=j;break
  check(cut is not None,'no complete independently dated basket session')
  rows=rows[:cut+1];asof=rows[-1][0];check(not prior or asof>=prior['asOf'],'basket date regressed')
- snapshot={'schemaVersion':1,'asOf':asof,'generatedAt':dt.datetime.now(dt.timezone.utc).isoformat().replace('+00:00','Z'),'poolVersion':'2026-11-22-core23-extended11','referenceUrl':REF,'funds':funds,'rows':rows,'sources':{'sh':SSE+'?sqlId=COMMON_SSE_ZQPZ_ETFZL_XXPL_ETFGM_SEARCH_L','sz':SZSE+'?SHOWTYPE=xlsx&CATALOGID=scsj_fund_jjgm','nav':EM},'checks':{'requests':client.requests,'seconds':round(time.monotonic()-began,2),'officialShDates':sorted(d for d in official_sh if d<=asof),'officialSzDates':sorted(d for d in official_sz if d<=asof),'historyMode':'official','sampleChecks':crosschecks,'navCorrections':nav_corrections,'navConflicts':nav_conflicts}}
+ snapshot={'schemaVersion':1,'asOf':asof,'generatedAt':dt.datetime.now(dt.timezone.utc).isoformat().replace('+00:00','Z'),'poolVersion':'2026-11-22-core23-extended11','referenceUrl':REF,'funds':funds,'rows':rows,'sources':{'sh':SSE+'?sqlId=COMMON_SSE_ZQPZ_ETFZL_XXPL_ETFGM_SEARCH_L','sz':SZSE+'?SHOWTYPE=xlsx&CATALOGID=scsj_fund_jjgm','nav':EM,'history':'https://github.com/wwww1998/national-team-etf-flow/blob/main/_etf_shares_cache.json'},'checks':{'requests':client.requests,'seconds':round(time.monotonic()-began,2),'officialShDates':sorted(d for d in official_sh if d<=asof),'officialSzDates':sorted(d for d in official_sz if d<=asof),'historyMode':historical_mode,'sampleChecks':crosschecks,'shareSampleChecks':sample_checks,'archiveSha':ARCHIVE_SHA,'navCorrections':nav_corrections,'navConflicts':nav_conflicts}}
  if asof<dates[-1]:snapshot['pending']={'checkedAt':snapshot['generatedAt'],'reason':'最新交易日的份额或同日净值尚未全部发布'}
  output.parent.mkdir(parents=True,exist_ok=True);temp=output.with_suffix('.tmp.json');temp.write_text(json.dumps(snapshot,ensure_ascii=False,separators=(',',':'))+'\n')
  # Shared UI/server validator is the final gate before atomic replacement.
@@ -206,4 +247,14 @@ def main():
  temp.replace(output)
  print(json.dumps({'asOf':asof,'funds':len(funds),'sessions':len(rows),'requests':client.requests,'seconds':snapshot['checks']['seconds'],'navCrosschecks':crosschecks,'bytes':output.stat().st_size}),flush=True)
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+ try:main()
+ except Unavailable as error:
+  output=Path(os.getenv('ETF_BASKET_OUTPUT_DIR','public/data'))/'etf-basket.json'
+  if not output.exists():raise
+  prior=json.loads(output.read_text())
+  if not prior:raise
+  subprocess.run(['node','--experimental-strip-types','scripts/verify-etf-basket.mjs',str(output)],check=True)
+  prior['pending']={'checkedAt':dt.datetime.now(dt.timezone.utc).isoformat().replace('+00:00','Z'),'reason':'来源暂不可达，保留已核验数据并等待下一定时补采'}
+  temp=output.with_suffix('.tmp.json');temp.write_text(json.dumps(prior,ensure_ascii=False,separators=(',',':'))+'\n');temp.replace(output)
+  print('::warning::ETF basket source temporarily unavailable; prior verified values retained: '+str(error),flush=True)

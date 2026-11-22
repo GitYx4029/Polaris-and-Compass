@@ -1,5 +1,5 @@
 export type BasketEvidence={holder:string;asOf:string;publishedAt:string;url:string;shares?:number;page?:string};
-export type BasketFund={code:string;name:string;category:string;group:"core"|"extended";inception:string;evidence?:BasketEvidence[]};
+export type BasketFund={code:string;name:string;category:string;group:"core"|"extended";inception:string;firstShareDate?:string;evidence?:BasketEvidence[]};
 export type BasketRow=[string,(number|null)[],(number|null)[]];
 export type BasketSnapshot={schemaVersion:1;asOf:string;generatedAt:string;poolVersion:string;referenceUrl:string;funds:BasketFund[];rows:BasketRow[];
   sources:{sh:string;sz:string;nav:string;history?:string};
@@ -31,9 +31,11 @@ export function basketSeries(s:BasketSnapshot,group:"all"|"core"|"extended"="all
   const ids=s.funds.map((f,i)=>({f,i})).filter(x=>group==="all"||x.f.group===group);
   return s.rows.map(([date,q,v],j)=>{
     const flows:(number|null)[]=s.funds.map(()=>null),rates:(number|null)[]=s.funds.map(()=>null),groups:Record<string,number|null>={};
-    let net=0,scale=0,valid=0,expected=0,scaleCount=0;
-    for(const {f,i} of ids){if(f.inception>date)continue;expected++;const prev=s.rows[j-1]?.[1][i],oldNav=s.rows[j-1]?.[2][i];
+    let net=0,scale=0,valid=0,expected=0,scaleCount=0,scaleExpected=0;
+    for(const {f,i} of ids){if(f.inception>date||f.firstShareDate&&date<f.firstShareDate)continue;scaleExpected++;const prev=s.rows[j-1]?.[1][i],oldNav=s.rows[j-1]?.[2][i];
       if(q[i]!==null&&v[i]!==null){scale+=q[i]!*v[i]!;scaleCount++;}
+      if(f.firstShareDate===date)continue; // Initial subscribed shares establish a baseline, not daily flow.
+      expected++;
       let flow:number|null=null;
       if(j&&prev!==null&&prev!==undefined&&q[i]!==null&&v[i]!==null){
         const ratio=prev>0?q[i]!/prev:1,navRatio=oldNav?v[i]!/oldNav:1;
@@ -44,7 +46,7 @@ export function basketSeries(s:BasketSnapshot,group:"all"|"core"|"extended"="all
       if(!(f.category in groups))groups[f.category]=0;
       groups[f.category]=groups[f.category]===null||flow===null?null:groups[f.category]!+flow;
     }
-    return {date,net:expected>0&&valid===expected?net:null,scale:expected>0&&scaleCount===expected?scale:null,expected,valid,groups,flows,rates};
+    return {date,net:expected>0&&valid===expected?net:null,scale:scaleExpected>0&&scaleCount===scaleExpected?scale:null,expected,valid,groups,flows,rates};
   });
 }
 export const basketWindows=[{key:"1m",label:"近1月",months:1},{key:"3m",label:"近3月",months:3},{key:"6m",label:"近半年",months:6},{key:"1y",label:"近1年",months:12},{key:"3y",label:"近3年",months:36},{key:"all",label:"全部",months:0}] as const;
