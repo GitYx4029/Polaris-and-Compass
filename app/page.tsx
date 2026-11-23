@@ -627,7 +627,7 @@ export default function Home() {
 
       </section>
       </section>
-      <section id="quote-library" className="quote-library" aria-label="投资观点库导出"><div><strong>投资观点库</strong><span>逐条附有作者、原始出处和定位；按北京时间每日轮换，周一、周四为段永平观点。</span></div><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>导出观点库 CSV（{investorQuotes.length} 条）</button></section>
+      <section id="quote-library" className="quote-library quote-library-download" aria-label="投资观点库下载"><button className="quote-export" onClick={downloadQuotes}><Download size={15}/>投资观点库下载</button></section>
     </div>
   </main></MarginProvider>;
 }
