@@ -83,11 +83,11 @@ GitHub Actions 的 `schedule` 可能延迟或不触发。网页在完整收盘�
 
 备用路径现场检查可使用 `MARGIN_EXCHANGE_ONLY=1`，并通过 `MARGIN_OUTPUT_DIR` 指定隔离测试目录。该模式不将官方偿还原值的权益调整差异隐藏为真实现金流。
 
-## 私有仓库与公开网站
+## 公开入口与独立数据服务
 
-成品入口：https://a-share-pulse-lxy-0924.reagan-park-6434.chatgpt.site
+成品入口：https://gityx4029.github.io/Polaris-and-Compass/
 
-后续协作、发布与数据更新说明见 [PRIVATE_HOSTING.md](docs/PRIVATE_HOSTING.md)。GitHub Pages 已改为显式可选，不是默认发布入口。
+后续协作、发布与数据更新说明见 [PRIVATE_HOSTING.md](docs/PRIVATE_HOSTING.md)。代码更新到 `main` 后自动发布 GitHub Pages，并核对线上 `build-info.json` 的源代码版本与新版下载按钮；仅更新仓库不算网页发布完成。数据继续通过独立持久化接口提供，日常采集不依赖网页重建、不调用大模型。
 
 
 ## 汇金相关宽基 ETF 长周期观察

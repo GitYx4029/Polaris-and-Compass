@@ -1,6 +1,8 @@
 # Private repository / public website
 
-Public website: https://a-share-pulse-lxy-0924.reagan-park-6434.chatgpt.site
+Primary public website: https://gityx4029.github.io/Polaris-and-Compass/
+
+Independent data service and alternate website: https://a-share-pulse-lxy-0924.reagan-park-6434.chatgpt.site
 
 Sites project ID: `appgprj_6ab4a351f7c881918ae022a1ba0cf3b2`
 GitHub source: `GitYx4029/Polaris-and-Compass`
@@ -11,11 +13,13 @@ The Sites project has a separate controlled Git source repository. A future Chat
 
 GitHub collaboration is authorized separately: retain the GitHub connection's read/write grant for this repository after changing its visibility. If private-repository access is removed from the installed GitHub app, reselect this repository in that app's repository access settings. Do not make the repository public as a workaround or place a GitHub token in chat/browser code.
 
-For future code changes, compare the latest Sites source and GitHub `main` before editing, preserve both histories, sync the intended source changes to both, and publish through Sites. Automated collection modifies datasets independently; never overwrite a collector's newer data with an old local checkout.
+For future code changes, compare the latest Sites source and GitHub `main` before editing and preserve both histories. Commit intended webpage changes to GitHub `main`, wait for the Pages deployment and its public URL verification, and confirm that `/Polaris-and-Compass/build-info.json` names the published source commit. Updating repository code alone is not proof of a website release. Keep Sites source changes in sync; publish backend changes through Sites when required. Automated collection modifies datasets independently; never overwrite a collector's newer data with an old local checkout.
 
 ## GitHub Pages
 
-Pages builds run only when repository variable `ENABLE_GITHUB_PAGES` is explicitly `true`. The default deployment target is Sites. Before making the repository private, verify the public Site and, where applicable, a real collection/publication/readback.
+GitHub Pages is the primary public entrance. Code pushes to `main` and manual runs build and publish it without an enable flag. Data-only changes under `public/data/` or `data/` do not rebuild the webpage. The optional collector-triggered Pages rebuild remains gated by `ENABLE_GITHUB_PAGES`; normal data updates are delivered independently through the public data API. The publish workflow records the actual checked-out source commit and verifies the public version plus the quote download footer after deployment.
+
+Before making this repository private, check that the account's plan supports private-repository Pages, or explicitly agree on a replacement public entrance. Do not silently switch the link readers already use.
 
 ## Data pipeline
 

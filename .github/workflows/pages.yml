@@ -3,6 +3,9 @@ name: Publish GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'public/data/**'
+      - 'data/**'
   workflow_dispatch:
   workflow_call:
 
@@ -17,8 +20,10 @@ concurrency:
 
 jobs:
   build:
-    if: vars.ENABLE_GITHUB_PAGES == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      source_commit: ${{ steps.source.outputs.commit }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,8 +44,20 @@ jobs:
         run: node scripts/etf-flows-self-check.mjs
       - name: Verify ETF latest and historical rankings
         run: node scripts/verify-etf-flows.mjs
+      - name: Check broad ETF basket calculations and ranges
+        run: node --experimental-strip-types --test scripts/etf-basket.test.mjs
       - name: Verify committed snapshot consistency
         run: node scripts/verify-market.mjs
+      - name: Record exact published source version
+        id: source
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+          fs.writeFileSync('public/build-info.json',JSON.stringify({commit,builtAt:new Date().toISOString()})+'\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`commit=${commit}\n`);
+          JS
       - run: npm run build
       - uses: actions/configure-pages@v5
         with:
@@ -54,6 +71,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify the public URL serves this version
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+          PAGES_EXPECTED_COMMIT: ${{ needs.build.outputs.source_commit }}
+        run: node scripts/verify-pages.mjs
