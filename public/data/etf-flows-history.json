@@ -8480,6 +8480,271 @@
         "requests": 23,
         "seconds": 5.48
       }
+    },
+    {
+      "schemaVersion": 1,
+      "asOf": "2026-11-23",
+      "generatedAt": "2026-11-24T01:55:35.427Z",
+      "source": "证券之星 ETF 数据宝",
+      "sourceUrl": "https://fund.stockstar.com/etf/detail",
+      "method": "数据源净申购赎回估算原值，非二级市场主力资金流向",
+      "rankingUrl": "https://fund.stockstar.com/etf/data/GetBBChartDatas?count=60",
+      "universeCount": 1691,
+      "rankingDigest": "25a12ab816e5537d67325b76294f2828df2517edc8fd85ca2c60466de2c326ab",
+      "checks": {
+        "rankingMatched": 20,
+        "turnoverDateMatched": 20,
+        "fundTypeConfirmed": 20,
+        "sameDateCrossChecks": 20,
+        "providerRecords": 1701,
+        "deduplicated": 10
+      },
+      "rows": [
+        {
+          "rank": 1,
+          "code": "512100",
+          "name": "中证1000ETF南方",
+          "fullName": "南方中证1000交易型开放式指数证券投资基金",
+          "netInflowYi": 34.62,
+          "turnoverYi": 65.545739,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh512100&param=sh512100%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 2,
+          "code": "510500",
+          "name": "中证500ETF南方",
+          "fullName": "中证500交易型开放式指数证券投资基金",
+          "netInflowYi": 22.97,
+          "turnoverYi": 42.418622,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510500&param=sh510500%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 3,
+          "code": "588000",
+          "name": "科创50ETF华夏",
+          "fullName": "华夏上证科创板50成份交易型开放式指数证券投资基金",
+          "netInflowYi": 19.72,
+          "turnoverYi": 111.15784099999999,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh588000&param=sh588000%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 4,
+          "code": "513180",
+          "name": "恒生科技ETF华夏",
+          "fullName": "华夏恒生科技交易型开放式指数证券投资基金(QDII)",
+          "netInflowYi": 19.15,
+          "turnoverYi": 56.797019999999996,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh513180&param=sh513180%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 5,
+          "code": "510310",
+          "name": "沪深300ETF易方达",
+          "fullName": "易方达沪深300交易型开放式指数发起式证券投资基金",
+          "netInflowYi": 17.06,
+          "turnoverYi": 24.223748,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510310&param=sh510310%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 6,
+          "code": "159915",
+          "name": "创业板ETF易方达",
+          "fullName": "易方达创业板交易型开放式指数证券投资基金",
+          "netInflowYi": 16.69,
+          "turnoverYi": 137.50123,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159915&param=sz159915%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 7,
+          "code": "510300",
+          "name": "沪深300ETF华泰柏瑞",
+          "fullName": "华泰柏瑞沪深300交易型开放式指数证券投资基金",
+          "netInflowYi": 16.13,
+          "turnoverYi": 55.892782,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510300&param=sh510300%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 8,
+          "code": "588170",
+          "name": "科创半导体ETF华夏",
+          "fullName": "华夏上证科创板半导体材料设备主题交易型开放式指数证券投资基金",
+          "netInflowYi": 9.44,
+          "turnoverYi": 99.57397399999999,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh588170&param=sh588170%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 9,
+          "code": "510050",
+          "name": "上证50ETF华夏",
+          "fullName": "上证50交易型开放式指数证券投资基金",
+          "netInflowYi": 7.01,
+          "turnoverYi": 32.429808,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh510050&param=sh510050%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 10,
+          "code": "159530",
+          "name": "机器人ETF易方达",
+          "fullName": "易方达国证机器人产业交易型开放式指数证券投资基金",
+          "netInflowYi": 6.71,
+          "turnoverYi": 20.965001,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159530&param=sz159530%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 11,
+          "code": "159845",
+          "name": "中证1000ETF华夏",
+          "fullName": "华夏中证1000交易型开放式指数证券投资基金",
+          "netInflowYi": 6.35,
+          "turnoverYi": 16.214973,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159845&param=sz159845%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 12,
+          "code": "563300",
+          "name": "中证2000ETF华泰柏瑞",
+          "fullName": "华泰柏瑞中证2000交易型开放式指数证券投资基金",
+          "netInflowYi": 5.26,
+          "turnoverYi": 14.225230999999999,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh563300&param=sh563300%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 13,
+          "code": "563360",
+          "name": "A500ETF华泰柏瑞",
+          "fullName": "华泰柏瑞中证A500交易型开放式指数证券投资基金",
+          "netInflowYi": 4.66,
+          "turnoverYi": 51.568796999999996,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh563360&param=sh563360%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 14,
+          "code": "159352",
+          "name": "A500ETF南方",
+          "fullName": "南方中证A500交易型开放式指数证券投资基金",
+          "netInflowYi": 4.37,
+          "turnoverYi": 51.805001000000004,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159352&param=sz159352%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 15,
+          "code": "159949",
+          "name": "创业板50ETF华安",
+          "fullName": "华安创业板50交易型开放式指数证券投资基金",
+          "netInflowYi": 4.23,
+          "turnoverYi": 28.757710999999997,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159949&param=sz159949%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 16,
+          "code": "588080",
+          "name": "科创50ETF易方达",
+          "fullName": "易方达上证科创板50成份交易型开放式指数证券投资基金",
+          "netInflowYi": 3.67,
+          "turnoverYi": 31.4951,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh588080&param=sh588080%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 17,
+          "code": "159558",
+          "name": "半导体设备ETF易方达",
+          "fullName": "易方达中证半导体材料设备主题交易型开放式指数证券投资基金",
+          "netInflowYi": 2.84,
+          "turnoverYi": 17.271827,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159558&param=sz159558%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 18,
+          "code": "159649",
+          "name": "国开债ETF华安",
+          "fullName": "华安中债1-5年国开行债券交易型开放式指数证券投资基金",
+          "netInflowYi": 2.8,
+          "turnoverYi": 31.215962,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159649&param=sz159649%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 19,
+          "code": "560010",
+          "name": "中证1000ETF广发",
+          "fullName": "广发中证1000交易型开放式指数证券投资基金",
+          "netInflowYi": 2.17,
+          "turnoverYi": 10.137387,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sh560010&param=sh560010%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        },
+        {
+          "rank": 20,
+          "code": "159516",
+          "name": "半导体设备ETF国泰",
+          "fullName": "国泰中证半导体材料设备主题交易型开放式指数证券投资基金",
+          "netInflowYi": 2.05,
+          "turnoverYi": 38.683085999999996,
+          "turnoverDate": "2026-11-23",
+          "providerQuoteDate": "2026-11-23",
+          "turnoverSourceUrl": "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?_var=etf_sz159516&param=sz159516%2Cday%2C%2C%2C40%2Cqfq",
+          "sameDateCrossCheck": true
+        }
+      ],
+      "collection": {
+        "requests": 23,
+        "seconds": 4.56
+      }
     }
   ]
 }
